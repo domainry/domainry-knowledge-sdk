@@ -17,6 +17,15 @@ type SourcePolicy interface {
 	CheckSources(context.Context, agentsdk.ConversationAuthority, string, *agentsdk.ConversationSources) ([]agentsdk.ConversationRunReference, error)
 	CheckRun(context.Context, agentsdk.ConversationAuthority, string, agentsdk.ConversationRunReference) ([]agentsdk.ConversationRunReference, error)
 }
+
+// ContextReader is the narrow Agent-owned read port required by Knowledge to
+// validate a referenced conversation or completed run. Remote clients answer
+// server challenges through this port; no repository or Store crosses the
+// network boundary.
+type ContextReader interface {
+	Conversation(context.Context, string, agentsdk.ConversationAuthority) (agentsdk.Conversation, error)
+	Run(context.Context, string, string, agentsdk.ConversationAuthority) (agentsdk.ConversationRun, error)
+}
 type Options struct {
 	DocumentStorage      agentsdk.KnowledgeDocumentStorage
 	DocumentPoll         time.Duration
@@ -30,6 +39,7 @@ type Options struct {
 	PersonalAuthorizer   agentsdk.ConversationToolAuthorizer
 	Knowledge            ConversationKnowledge
 	Sources              SourcePolicy
+	Context              ContextReader
 }
 type LibraryKnowledgeBinding struct {
 	WorkspaceID     string
