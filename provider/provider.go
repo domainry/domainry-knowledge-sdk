@@ -111,6 +111,11 @@ type Source interface {
 	agentsdk.KnowledgeDatasourceSource
 }
 
+// AdapterFactory is supplied by the outer product composition root. Knowledge
+// owns provider behavior, while the concrete Connector HTTP adapter remains in
+// the Connectors implementation repository.
+type AdapterFactory func(connector.Transport) (connector.Adapter, error)
+
 type Factory interface {
 	NewSource(Config) (Source, error)
 	NewAttachmentSource(Config, string) (agentsdk.ConversationAttachmentKnowledge, error)
