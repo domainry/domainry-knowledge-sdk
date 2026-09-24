@@ -1,5 +1,7 @@
 github.com/domainry/domainry-agent-sdk v0.1.22 h1:G7ZaZrtvmLWSvqrG65nwmjzpy637YdA6Y1X6GJ/Ucog=
 github.com/domainry/domainry-agent-sdk v0.1.22/go.mod h1:oMa4C1+dm5IKlMwDkbQxz+DostkjXVCfWujpP21huXQ=
+github.com/domainry/domainry-connector-sdk v0.1.2 h1:8aWP/B+s4g2nSh6SlbbE5oQHUCp+uDKGuG4ZZdRLSQ8=
+github.com/domainry/domainry-connector-sdk v0.1.2/go.mod h1:y3YMg09XmWCuxyIeYb1d4xC4AkFmqGWbrm+OaumeyY8=
 github.com/domainry/domainry-foundation v0.1.36 h1:GatcO4VRoP71ON5oFOtpFoF4VzxaFheaK9XkPBumzFQ=
 github.com/domainry/domainry-foundation v0.1.36/go.mod h1:ccnHN+6FE4EKc6XP1ycz+ckU3XfgI9WDYKFyXuD+3/Q=
 github.com/domainry/domainry-lifecycle-sdk v0.1.16 h1:Vjuo3axFvAAFv7NEcm2gs8dVXYKEq00aCBLTlkeMi4Q=
