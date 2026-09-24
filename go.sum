@@ -1,13 +1,13 @@
-github.com/domainry/domainry-agent-sdk v0.1.19 h1:X2x7xCNj7+q5HGBibxKjvIueJTc/5haPZFHbOzxLHm8=
-github.com/domainry/domainry-agent-sdk v0.1.19/go.mod h1:A/1Rycv/WU1cwegXgxygT8d6z9sV+KteMktXYQb59eE=
+github.com/domainry/domainry-agent-sdk v0.1.22 h1:G7ZaZrtvmLWSvqrG65nwmjzpy637YdA6Y1X6GJ/Ucog=
+github.com/domainry/domainry-agent-sdk v0.1.22/go.mod h1:oMa4C1+dm5IKlMwDkbQxz+DostkjXVCfWujpP21huXQ=
 github.com/domainry/domainry-foundation v0.1.36 h1:GatcO4VRoP71ON5oFOtpFoF4VzxaFheaK9XkPBumzFQ=
 github.com/domainry/domainry-foundation v0.1.36/go.mod h1:ccnHN+6FE4EKc6XP1ycz+ckU3XfgI9WDYKFyXuD+3/Q=
 github.com/domainry/domainry-lifecycle-sdk v0.1.16 h1:Vjuo3axFvAAFv7NEcm2gs8dVXYKEq00aCBLTlkeMi4Q=
 github.com/domainry/domainry-lifecycle-sdk v0.1.16/go.mod h1:zBx8wUBcC9QpxNS0Z9KcpqfNcsjUjKZbu5kWTysvHzc=
 github.com/domainry/domainry-orm v0.1.31 h1:fovrAVD9kj4nPUgXt0ReDe7oKd3cnM03mhh+Q51SkLI=
 github.com/domainry/domainry-orm v0.1.31/go.mod h1:gB/ooN737tsBYHbeHqCpngEprvdvZKp0Zygtzv+IPJY=
-github.com/domainry/domainry-todo v0.1.1 h1:si2hIzSLLq6oYrAMRwOKFTtf+cWqWZt5K/rSl7/D5U8=
-github.com/domainry/domainry-todo v0.1.1/go.mod h1:qDLKYw9HJvNOZmkzc8vn46P8Zkayyw9A3DcV/17gXcc=
+github.com/domainry/domainry-todo-sdk v0.1.0 h1:Kg7juJFXzIxZ9Vx97IWkFSmCzWbcZG8zhRQQRL5DDaQ=
+github.com/domainry/domainry-todo-sdk v0.1.0/go.mod h1:UTFhvMMC2vBYX7P+ArDWYQVPowLvOUxNt/GHEKtQ1aY=
 github.com/domainry/domainry-tools-sdk v0.1.5 h1:+WzsaHZklaLYnH2ygQaWgk4P/jsmKLyookAIC73tbiA=
 github.com/domainry/domainry-tools-sdk v0.1.5/go.mod h1:41IRoC2xhp8FiOsHb94+Pk+UWA+WxrGOCcTvNIILy+g=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
