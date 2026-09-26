@@ -20,6 +20,8 @@ var SaaSCapabilitiesV1 = []string{
 	"artifacts.write",
 	"attachments.read",
 	"attachments.write",
+	"files.read",
+	"files.write",
 	"knowledge_documents.read",
 	"knowledge_documents.write",
 	"knowledge_libraries.read",
