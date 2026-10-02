@@ -8,12 +8,13 @@ import (
 )
 
 type remoteSourceDescriptor struct {
-	Handle             string `json:"handle"`
-	Identity           string `json:"identity"`
-	PermissionID       string `json:"permission_id,omitempty"`
-	AccessPolicySHA256 string `json:"access_policy_sha256,omitempty"`
-	MaxBytes           int64  `json:"max_bytes,omitempty"`
-	Ready              bool   `json:"ready"`
+	Handle                string   `json:"handle"`
+	Identity              string   `json:"identity"`
+	DocumentPermissionIDs []string `json:"document_permission_ids,omitempty"`
+	ReadPermissionIDs     []string `json:"read_permission_ids,omitempty"`
+	AccessPolicySHA256    string   `json:"access_policy_sha256,omitempty"`
+	MaxBytes              int64    `json:"max_bytes,omitempty"`
+	Ready                 bool     `json:"ready"`
 }
 
 type managedSource struct {

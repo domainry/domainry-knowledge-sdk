@@ -19,6 +19,18 @@ type sourceAuthorizerStub struct {
 	authority agentsdk.ConversationAuthority
 }
 
+type attachmentPermissionResolverStub struct {
+	authority agentsdk.ConversationAuthority
+}
+
+func (*attachmentPermissionResolverStub) AuthorizeConversationAttachment(context.Context, string, agentsdk.ConversationAuthority) error {
+	return nil
+}
+func (s *attachmentPermissionResolverStub) ResolveConversationAttachmentPermissions(_ context.Context, authority agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentPermissionScope, error) {
+	s.authority = authority
+	return agentsdk.ConversationAttachmentPermissionScope{OrganizationIDs: []string{"org-a", "region-a"}}, nil
+}
+
 func (s *sourceAuthorizerStub) AuthorizeKnowledgeDocumentSource(_ context.Context, source agentsdk.KnowledgeDocumentSourceAccess, authority agentsdk.ConversationAuthority) error {
 	s.called, s.source, s.authority = true, source, authority
 	return nil
@@ -101,5 +113,21 @@ func TestSourceBackedDocumentUploadAnswersHostAuthorizationChallenge(t *testing.
 	document, err := service.UploadKnowledgeDocumentForSource(t.Context(), "library-a", agentsdk.KnowledgeDocumentUpload{ClientID: "upload-a", Filename: "meeting.txt", Data: []byte("content")}, source, authority)
 	if err != nil || document.ID != "document-a" || !authorizer.called || authorizer.source != source || authorizer.authority.UserID != authority.UserID {
 		t.Fatalf("document=%+v source=%+v authority=%+v called=%t err=%v", document, authorizer.source, authorizer.authority, authorizer.called, err)
+	}
+}
+
+func TestAttachmentPermissionChallengeUsesLiveHostResolver(t *testing.T) {
+	authority := agentsdk.ConversationAuthority{Known: true, RuntimeID: "runtime-a", WorkspaceID: "workspace-a", UserID: "user-a"}
+	input, _ := json.Marshal(struct {
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{authority})
+	resolver := &attachmentPermissionResolverStub{}
+	grant, err := answerChallenge(t.Context(), knowledgecontract.SaaSChallenge{Token: "permission-grant", Kind: "resolve.attachment_permissions", Input: input}, knowledgecontract.Options{AttachmentAuthorizer: resolver})
+	if err != nil || resolver.authority != authority || grant.Token != "permission-grant" {
+		t.Fatalf("grant=%+v authority=%+v err=%v", grant, resolver.authority, err)
+	}
+	var scope agentsdk.ConversationAttachmentPermissionScope
+	if json.Unmarshal(grant.Result, &scope) != nil || len(scope.OrganizationIDs) != 2 || scope.OrganizationIDs[0] != "org-a" {
+		t.Fatalf("scope=%+v", scope)
 	}
 }

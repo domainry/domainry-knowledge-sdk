@@ -40,6 +40,7 @@ type ResponseMapping struct {
 type Config struct {
 	DocumentManagement                         bool
 	DocumentPermissionIDs                      []string
+	ReadPermissionIDs                          []string
 	AnalysisDocumentIDs                        []string
 	ResponseMapping                            *ResponseMapping
 	InvalidResponseMapping                     bool
@@ -57,7 +58,7 @@ func (config Config) Configured() bool {
 	return strings.TrimSpace(config.BaseURL+config.TeamID+config.KBID+config.WorkspaceID) != "" ||
 		config.TopK != 0 || config.ResponseMapping != nil || config.InvalidResponseMapping ||
 		config.InvalidAnalysisDocumentIDs || config.DocumentManagement ||
-		config.DocumentPermissionIDs != nil || config.AnalysisDocumentIDs != nil
+		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil
 }
 
 // ConfigFromEnvironment parses Agent's default Knowledge source configuration

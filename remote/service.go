@@ -193,7 +193,7 @@ func (value *serviceClient) AttachmentKnowledgeAccess(ctx context.Context, conve
 	if err != nil {
 		return agentsdk.ConversationAttachmentKnowledgeScope{}, nil, err
 	}
-	return agentsdk.ConversationAttachmentKnowledgeScope{Source: managedSource{client: value.client, descriptor: output.Scope}, PermissionID: output.Scope.PermissionID}, output.Records, nil
+	return agentsdk.ConversationAttachmentKnowledgeScope{Source: managedSource{client: value.client, descriptor: output.Scope}, DocumentPermissionIDs: output.Scope.DocumentPermissionIDs, ReadPermissionIDs: output.Scope.ReadPermissionIDs}, output.Records, nil
 }
 func (value *serviceClient) AttachmentKnowledgeBinding(ctx context.Context, conversation string, authority agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentKnowledgeScope, error) {
 	var output remoteSourceDescriptor
@@ -204,7 +204,7 @@ func (value *serviceClient) AttachmentKnowledgeBinding(ctx context.Context, conv
 	if err != nil {
 		return agentsdk.ConversationAttachmentKnowledgeScope{}, err
 	}
-	return agentsdk.ConversationAttachmentKnowledgeScope{Source: managedSource{client: value.client, descriptor: output}, PermissionID: output.PermissionID}, nil
+	return agentsdk.ConversationAttachmentKnowledgeScope{Source: managedSource{client: value.client, descriptor: output}, DocumentPermissionIDs: output.DocumentPermissionIDs, ReadPermissionIDs: output.ReadPermissionIDs}, nil
 }
 func (value *serviceClient) AttachmentRecord(ctx context.Context, _ persistence.ConversationAttachmentRepository, conversationID, id string, authority agentsdk.ConversationAuthority) (persistence.ConversationAttachmentRecord, error) {
 	var output persistence.ConversationAttachmentRecord

@@ -181,6 +181,19 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		if err := options.AttachmentAuthorizer.AuthorizeConversationAttachment(ctx, input.Action, input.Authority); err != nil {
 			return knowledgecontract.SaaSGrant{}, err
 		}
+	case "resolve.attachment_permissions":
+		var input struct {
+			Authority agentsdk.ConversationAuthority `json:"authority"`
+		}
+		resolver, ok := options.AttachmentAuthorizer.(agentsdk.ConversationAttachmentPermissionResolver)
+		if !ok || json.Unmarshal(challenge.Input, &input) != nil {
+			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.attachment_permission_resolver_required", false, nil)
+		}
+		value, err := resolver.ResolveConversationAttachmentPermissions(ctx, input.Authority)
+		if err != nil {
+			return knowledgecontract.SaaSGrant{}, err
+		}
+		result = value
 	case "authorize.library":
 		var input struct {
 			Operation string                         `json:"operation"`
