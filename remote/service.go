@@ -586,6 +586,17 @@ func (value *serviceClient) UploadKnowledgeDocument(ctx context.Context, library
 	return output, err
 }
 
+func (value *serviceClient) UploadKnowledgeDocumentForSource(ctx context.Context, library string, input agentsdk.KnowledgeDocumentUpload, source agentsdk.KnowledgeDocumentSourceAccess, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
+	var output agentsdk.KnowledgeDocument
+	err := value.invoke(ctx, "service.document_upload_source", struct {
+		Library   string                                 `json:"library"`
+		Input     agentsdk.KnowledgeDocumentUpload       `json:"input"`
+		Source    agentsdk.KnowledgeDocumentSourceAccess `json:"source"`
+		Authority agentsdk.ConversationAuthority         `json:"authority"`
+	}{library, input, source, authority}, &output)
+	return output, err
+}
+
 type libraryRepository struct{ service *serviceClient }
 
 func (v libraryRepository) CreateKnowledgeLibrary(c context.Context, i agentsdk.KnowledgeLibraryCreate, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {

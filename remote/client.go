@@ -204,6 +204,17 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		if err := options.LibraryAuthorizer.ValidateKnowledgeLibraryMember(ctx, input.User, input.Authority); err != nil {
 			return knowledgecontract.SaaSGrant{}, err
 		}
+	case "authorize.document_source":
+		var input struct {
+			Source    agentsdk.KnowledgeDocumentSourceAccess `json:"source"`
+			Authority agentsdk.ConversationAuthority         `json:"authority"`
+		}
+		if options.SourceAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
+			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.document_source_authorizer_required", false, nil)
+		}
+		if err := options.SourceAuthorizer.AuthorizeKnowledgeDocumentSource(ctx, input.Source, input.Authority); err != nil {
+			return knowledgecontract.SaaSGrant{}, err
+		}
 	case "authorize.personal":
 		var input agentsdk.ConversationToolRequest
 		if options.PersonalAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
