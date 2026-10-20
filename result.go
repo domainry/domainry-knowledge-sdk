@@ -61,6 +61,14 @@ type Source interface {
 	RevalidateKnowledge(context.Context, Result, Authority) error
 }
 
+// ResultReadAuthorizer applies the current read policy for a previously saved
+// result. It is intentionally separate from RevalidateKnowledge: replaying a
+// frozen execution result and releasing it to another collaboration boundary
+// can require a stronger permission such as document download.
+type ResultReadAuthorizer interface {
+	AuthorizeKnowledgeResultRead(context.Context, Result, Authority) error
+}
+
 // ExtractionContentSource exposes normalized passages from a previously
 // authorized Knowledge result. It never grants access by itself.
 type ExtractionContentSource interface {
