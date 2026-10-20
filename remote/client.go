@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strings"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 	"github.com/domainry/domainry-foundation/telemetry"
 	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
@@ -154,62 +153,11 @@ func (c *client) invokeWithGrants(ctx context.Context, operation string, input a
 func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChallenge, options knowledgecontract.Options) (knowledgecontract.SaaSGrant, error) {
 	result := any(struct{}{})
 	switch challenge.Kind {
-	case "context.conversation":
-		var input struct {
-			ConversationID string                         `json:"conversation_id"`
-			Authority      agentsdk.ConversationAuthority `json:"authority"`
-		}
-		if options.Context == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.context_reader_required", false, nil)
-		}
-		value, err := options.Context.Conversation(ctx, input.ConversationID, input.Authority)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
-	case "context.run":
-		var input struct {
-			ConversationID string                         `json:"conversation_id"`
-			RunID          string                         `json:"run_id"`
-			Authority      agentsdk.ConversationAuthority `json:"authority"`
-		}
-		if options.Context == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.context_reader_required", false, nil)
-		}
-		value, err := options.Context.Run(ctx, input.ConversationID, input.RunID, input.Authority)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
-	case "authorize.attachment":
-		var input struct {
-			Action    string                         `json:"action"`
-			Authority agentsdk.ConversationAuthority `json:"authority"`
-		}
-		if options.AttachmentAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.attachment_authorizer_required", false, nil)
-		}
-		if err := options.AttachmentAuthorizer.AuthorizeConversationAttachment(ctx, input.Action, input.Authority); err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-	case "resolve.attachment_permissions":
-		var input struct {
-			Authority agentsdk.ConversationAuthority `json:"authority"`
-		}
-		resolver, ok := options.AttachmentAuthorizer.(agentsdk.ConversationAttachmentPermissionResolver)
-		if !ok || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.attachment_permission_resolver_required", false, nil)
-		}
-		value, err := resolver.ResolveConversationAttachmentPermissions(ctx, input.Authority)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
 	case "authorize.library":
 		var input struct {
-			Operation string                         `json:"operation"`
-			Item      agentsdk.KnowledgeLibrary      `json:"item"`
-			Authority agentsdk.ConversationAuthority `json:"authority"`
+			Operation string                        `json:"operation"`
+			Item      knowledgesdk.KnowledgeLibrary `json:"item"`
+			Authority knowledgesdk.Authority        `json:"authority"`
 		}
 		if options.LibraryAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
 			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.library_authorizer_required", false, nil)
@@ -219,8 +167,8 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		}
 	case "authorize.library_member":
 		var input struct {
-			User      string                         `json:"user"`
-			Authority agentsdk.ConversationAuthority `json:"authority"`
+			User      string                 `json:"user"`
+			Authority knowledgesdk.Authority `json:"authority"`
 		}
 		if options.LibraryAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
 			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.library_authorizer_required", false, nil)
@@ -230,8 +178,8 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		}
 	case "authorize.document_source":
 		var input struct {
-			Source    agentsdk.KnowledgeDocumentSourceAccess `json:"source"`
-			Authority agentsdk.ConversationAuthority         `json:"authority"`
+			Source    knowledgesdk.KnowledgeDocumentSourceAccess `json:"source"`
+			Authority knowledgesdk.Authority                     `json:"authority"`
 		}
 		if options.SourceAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
 			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.document_source_authorizer_required", false, nil)
@@ -239,44 +187,6 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		if err := options.SourceAuthorizer.AuthorizeKnowledgeDocumentSource(ctx, input.Source, input.Authority); err != nil {
 			return knowledgecontract.SaaSGrant{}, err
 		}
-	case "authorize.personal":
-		var input agentsdk.ConversationToolRequest
-		if options.PersonalAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.personal_authorizer_required", false, nil)
-		}
-		value, err := options.PersonalAuthorizer.AuthorizeConversationTool(ctx, input)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
-	case "sources.check":
-		var input struct {
-			Consumer  string                         `json:"consumer"`
-			Sources   *agentsdk.ConversationSources  `json:"sources"`
-			Authority agentsdk.ConversationAuthority `json:"authority"`
-		}
-		if options.Sources == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.source_policy_required", false, nil)
-		}
-		value, err := options.Sources.CheckSources(ctx, input.Authority, input.Consumer, input.Sources)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
-	case "sources.run":
-		var input struct {
-			Consumer  string                            `json:"consumer"`
-			Ref       agentsdk.ConversationRunReference `json:"ref"`
-			Authority agentsdk.ConversationAuthority    `json:"authority"`
-		}
-		if options.Sources == nil || json.Unmarshal(challenge.Input, &input) != nil {
-			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.source_policy_required", false, nil)
-		}
-		value, err := options.Sources.CheckRun(ctx, input.Authority, input.Consumer, input.Ref)
-		if err != nil {
-			return knowledgecontract.SaaSGrant{}, err
-		}
-		result = value
 	default:
 		return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.challenge_unsupported", false, nil)
 	}
@@ -288,14 +198,14 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 }
 
 func remoteError(class, code string, retryable bool, cause error) error {
-	return &agentsdk.Error{Class: class, Code: code, Retryable: retryable, Cause: cause}
+	return &knowledgesdk.Error{Class: class, Code: code, Retryable: retryable, Cause: cause}
 }
 
 func decodeRemoteError(input *knowledgecontract.SaaSError) error {
 	if input == nil {
 		return remoteError("unavailable", "knowledge.remote_request_failed", false, nil)
 	}
-	classified := &agentsdk.Error{Class: safeClass(input.Class), Code: safeCode(input.Code), Message: safeMessage(input.Message), Retryable: input.Retryable}
+	classified := &knowledgesdk.Error{Class: safeClass(input.Class), Code: safeCode(input.Code), Message: safeMessage(input.Message), Retryable: input.Retryable}
 	if classified.Class == "conflict" && len(input.Details) != 0 {
 		var conflict knowledgesdk.KnowledgePageConflict
 		if json.Unmarshal(input.Details, &conflict) == nil && conflict.CurrentDraftRevision > 0 && conflict.BasePublishedVersion >= 0 && len(conflict.CurrentContentSHA256) == 64 && !conflict.CurrentUpdatedAt.IsZero() {

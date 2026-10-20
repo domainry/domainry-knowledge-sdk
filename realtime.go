@@ -3,8 +3,6 @@ package knowledgesdk
 import (
 	"context"
 	"time"
-
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 )
 
 // KnowledgeCollaborationUpdate carries a native Yjs update plus the canonical
@@ -88,8 +86,8 @@ type KnowledgeCollaborationPublish struct {
 }
 
 type KnowledgeRealtimeCollaborationService interface {
-	ConnectKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationConnect, agentsdk.ConversationAuthority) (KnowledgeCollaborationSession, error)
-	SyncKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationSync, agentsdk.ConversationAuthority) (KnowledgeCollaborationSyncResult, error)
-	CloseKnowledgeCollaboration(context.Context, string, string, string, agentsdk.ConversationAuthority) error
-	PublishKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationPublish, agentsdk.ConversationAuthority) (KnowledgePageView, error)
+	ConnectKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationConnect, Authority) (KnowledgeCollaborationSession, error)
+	SyncKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationSync, Authority) (KnowledgeCollaborationSyncResult, error)
+	CloseKnowledgeCollaboration(context.Context, string, string, string, Authority) error
+	PublishKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationPublish, Authority) (KnowledgePageView, error)
 }

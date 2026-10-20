@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
 )
 
 type remoteSourceDescriptor struct {
-	Handle                string                             `json:"handle"`
-	Identity              string                             `json:"identity"`
-	DocumentPermissionIDs []string                           `json:"document_permission_ids,omitempty"`
-	ReadPermissionIDs     []string                           `json:"read_permission_ids,omitempty"`
-	AccessPolicySHA256    string                             `json:"access_policy_sha256,omitempty"`
-	IndexMaxBytes         int64                              `json:"index_max_bytes,omitempty"`
-	DocumentFormats       []agentsdk.KnowledgeDocumentFormat `json:"document_formats,omitempty"`
-	Ready                 bool                               `json:"ready"`
+	Handle                string                                 `json:"handle"`
+	Identity              string                                 `json:"identity"`
+	DocumentPermissionIDs []string                               `json:"document_permission_ids,omitempty"`
+	ReadPermissionIDs     []string                               `json:"read_permission_ids,omitempty"`
+	AccessPolicySHA256    string                                 `json:"access_policy_sha256,omitempty"`
+	IndexMaxBytes         int64                                  `json:"index_max_bytes,omitempty"`
+	DocumentFormats       []knowledgesdk.KnowledgeDocumentFormat `json:"document_formats,omitempty"`
+	Ready                 bool                                   `json:"ready"`
 }
 
 type managedSource struct {
@@ -25,17 +25,14 @@ type managedSource struct {
 }
 
 func (value managedSource) KnowledgeDocumentSourceIdentity() string { return value.descriptor.Identity }
-func (value managedSource) AttachmentKnowledgeSourceIdentity() string {
-	return value.descriptor.Identity
-}
 func (value managedSource) KnowledgeDocumentAccessPolicySHA256() string {
 	return value.descriptor.AccessPolicySHA256
 }
 func (value managedSource) KnowledgeDocumentIndexMaximumBytes() int64 {
 	return value.descriptor.IndexMaxBytes
 }
-func (value managedSource) KnowledgeDocumentFormats() []agentsdk.KnowledgeDocumentFormat {
-	return append([]agentsdk.KnowledgeDocumentFormat(nil), value.descriptor.DocumentFormats...)
+func (value managedSource) KnowledgeDocumentFormats() []knowledgesdk.KnowledgeDocumentFormat {
+	return append([]knowledgesdk.KnowledgeDocumentFormat(nil), value.descriptor.DocumentFormats...)
 }
 func (value managedSource) KnowledgeDocumentManagementReady() error {
 	if !value.descriptor.Ready {
@@ -43,77 +40,76 @@ func (value managedSource) KnowledgeDocumentManagementReady() error {
 	}
 	return nil
 }
-func (value managedSource) PutKnowledgeDocument(ctx context.Context, input agentsdk.KnowledgeDocumentContent, authority agentsdk.ConversationAuthority) error {
+func (value managedSource) PutKnowledgeDocument(ctx context.Context, input knowledgesdk.KnowledgeDocumentIndexContent, authority knowledgesdk.Authority) error {
 	return value.client.uploadStream(ctx, knowledgecontract.SaaSSourceDocumentPutPath, knowledgecontract.SaaSSourceDocumentPutRequest{
 		Handle: value.descriptor.Handle, Input: input, Authority: authority,
 	}, input.Content, input.Bytes, nil)
 }
-func (value managedSource) InspectKnowledgeDocument(ctx context.Context, id string, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentState, error) {
-	var output agentsdk.KnowledgeDocumentState
+func (value managedSource) InspectKnowledgeDocument(ctx context.Context, id string, authority knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentState, error) {
+	var output knowledgesdk.KnowledgeDocumentState
 	err := value.client.invoke(ctx, "source.document.inspect", struct {
-		Handle    string                         `json:"handle"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		ID        string                 `json:"id"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, id, authority}, &output)
 	return output, err
 }
-func (value managedSource) DeleteKnowledgeDocument(ctx context.Context, id string, authority agentsdk.ConversationAuthority) error {
+func (value managedSource) DeleteKnowledgeDocument(ctx context.Context, id string, authority knowledgesdk.Authority) error {
 	return value.client.invoke(ctx, "source.document.delete", struct {
-		Handle    string                         `json:"handle"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		ID        string                 `json:"id"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, id, authority}, nil)
 }
-func (value managedSource) RecoverKnowledgeDocumentDelete(ctx context.Context, id string, authority agentsdk.ConversationAuthority) error {
+func (value managedSource) RecoverKnowledgeDocumentDelete(ctx context.Context, id string, authority knowledgesdk.Authority) error {
 	return value.client.invoke(ctx, "source.document.recover_delete", struct {
-		Handle    string                         `json:"handle"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		ID        string                 `json:"id"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, id, authority}, nil)
 }
-func (value managedSource) SearchKnowledge(ctx context.Context, query string, authority agentsdk.ConversationAuthority) (agentsdk.ConversationKnowledgeResult, error) {
-	var output agentsdk.ConversationKnowledgeResult
+func (value managedSource) SearchKnowledge(ctx context.Context, query string, authority knowledgesdk.Authority) (knowledgesdk.Result, error) {
+	var output knowledgesdk.Result
 	err := value.client.invoke(ctx, "source.knowledge.search", struct {
-		Handle    string                         `json:"handle"`
-		Query     string                         `json:"query"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		Query     string                 `json:"query"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, query, authority}, &output)
 	return output, err
 }
-func (value managedSource) ReadKnowledge(ctx context.Context, id string, authority agentsdk.ConversationAuthority) (agentsdk.ConversationKnowledgeResult, error) {
-	var output agentsdk.ConversationKnowledgeResult
+func (value managedSource) ReadKnowledge(ctx context.Context, id string, authority knowledgesdk.Authority) (knowledgesdk.Result, error) {
+	var output knowledgesdk.Result
 	err := value.client.invoke(ctx, "source.knowledge.read", struct {
-		Handle    string                         `json:"handle"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		ID        string                 `json:"id"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, id, authority}, &output)
 	return output, err
 }
-func (value managedSource) RevalidateKnowledge(ctx context.Context, input agentsdk.ConversationKnowledgeResult, authority agentsdk.ConversationAuthority) error {
+func (value managedSource) RevalidateKnowledge(ctx context.Context, input knowledgesdk.Result, authority knowledgesdk.Authority) error {
 	return value.client.invoke(ctx, "source.knowledge.revalidate", struct {
-		Handle    string                               `json:"handle"`
-		Input     agentsdk.ConversationKnowledgeResult `json:"input"`
-		Authority agentsdk.ConversationAuthority       `json:"authority"`
+		Handle    string                 `json:"handle"`
+		Input     knowledgesdk.Result    `json:"input"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, input, authority}, nil)
 }
-func (value managedSource) SearchKnowledgeDocumentPassages(ctx context.Context, query string, authority agentsdk.ConversationAuthority) ([]agentsdk.KnowledgeDocumentPassage, error) {
-	var output []agentsdk.KnowledgeDocumentPassage
+func (value managedSource) SearchKnowledgeDocumentPassages(ctx context.Context, query string, authority knowledgesdk.Authority) ([]knowledgesdk.KnowledgeDocumentPassage, error) {
+	var output []knowledgesdk.KnowledgeDocumentPassage
 	err := value.client.invoke(ctx, "source.passages.search", struct {
-		Handle    string                         `json:"handle"`
-		Query     string                         `json:"query"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		Query     string                 `json:"query"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, query, authority}, &output)
 	return output, err
 }
-func (value managedSource) ReadKnowledgeDocumentPassages(ctx context.Context, id string, authority agentsdk.ConversationAuthority) ([]agentsdk.KnowledgeDocumentPassage, error) {
-	var output []agentsdk.KnowledgeDocumentPassage
+func (value managedSource) ReadKnowledgeDocumentPassages(ctx context.Context, id string, authority knowledgesdk.Authority) ([]knowledgesdk.KnowledgeDocumentPassage, error) {
+	var output []knowledgesdk.KnowledgeDocumentPassage
 	err := value.client.invoke(ctx, "source.passages.read", struct {
-		Handle    string                         `json:"handle"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
+		Handle    string                 `json:"handle"`
+		ID        string                 `json:"id"`
+		Authority knowledgesdk.Authority `json:"authority"`
 	}{value.descriptor.Handle, id, authority}, &output)
 	return output, err
 }
 
-var _ agentsdk.ConversationAttachmentKnowledgeSource = managedSource{}
-var _ agentsdk.KnowledgeDocumentDeleteRecoverySource = managedSource{}
+var _ knowledgesdk.KnowledgeDocumentDeleteRecoverySource = managedSource{}

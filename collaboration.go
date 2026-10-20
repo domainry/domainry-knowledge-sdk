@@ -3,8 +3,6 @@ package knowledgesdk
 import (
 	"context"
 	"time"
-
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 )
 
 type KnowledgePageCommentAnchor struct {
@@ -89,17 +87,17 @@ type KnowledgePageAttachmentPage struct {
 }
 
 type CommentService interface {
-	KnowledgePageComments(context.Context, string, string, string, int, bool, agentsdk.ConversationAuthority) (KnowledgePageCommentPage, error)
-	CreateKnowledgePageComment(context.Context, string, string, KnowledgePageCommentCreate, agentsdk.ConversationAuthority) (KnowledgePageComment, error)
-	UpdateKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentUpdate, agentsdk.ConversationAuthority) (KnowledgePageComment, error)
-	ResolveKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentResolve, agentsdk.ConversationAuthority) (KnowledgePageComment, error)
-	DeleteKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentDelete, agentsdk.ConversationAuthority) (KnowledgePageComment, error)
+	KnowledgePageComments(context.Context, string, string, string, int, bool, Authority) (KnowledgePageCommentPage, error)
+	CreateKnowledgePageComment(context.Context, string, string, KnowledgePageCommentCreate, Authority) (KnowledgePageComment, error)
+	UpdateKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentUpdate, Authority) (KnowledgePageComment, error)
+	ResolveKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentResolve, Authority) (KnowledgePageComment, error)
+	DeleteKnowledgePageComment(context.Context, string, string, string, KnowledgePageCommentDelete, Authority) (KnowledgePageComment, error)
 }
 
 type PageAttachmentService interface {
-	KnowledgePageAttachments(context.Context, string, string, agentsdk.ConversationAuthority) (KnowledgePageAttachmentPage, error)
-	SetKnowledgePageAttachment(context.Context, string, string, string, KnowledgePageAttachmentWrite, agentsdk.ConversationAuthority) (KnowledgePageAttachment, error)
-	RemoveKnowledgePageAttachment(context.Context, string, string, string, KnowledgePageAttachmentRemove, agentsdk.ConversationAuthority) error
+	KnowledgePageAttachments(context.Context, string, string, Authority) (KnowledgePageAttachmentPage, error)
+	SetKnowledgePageAttachment(context.Context, string, string, string, KnowledgePageAttachmentWrite, Authority) (KnowledgePageAttachment, error)
+	RemoveKnowledgePageAttachment(context.Context, string, string, string, KnowledgePageAttachmentRemove, Authority) error
 }
 
 type KnowledgePrincipal struct {
@@ -121,8 +119,8 @@ type KnowledgePrincipalResolveRequest struct {
 }
 
 type KnowledgePrincipalDirectory interface {
-	SearchKnowledgePrincipals(context.Context, string, string, int, agentsdk.ConversationAuthority) (KnowledgePrincipalPage, error)
-	ResolveKnowledgePrincipals(context.Context, []string, agentsdk.ConversationAuthority) ([]KnowledgePrincipal, error)
+	SearchKnowledgePrincipals(context.Context, string, string, int, Authority) (KnowledgePrincipalPage, error)
+	ResolveKnowledgePrincipals(context.Context, []string, Authority) ([]KnowledgePrincipal, error)
 }
 
 type KnowledgeAccessLayer struct {
@@ -155,7 +153,7 @@ type KnowledgeAccessExplainRequest struct {
 }
 
 type KnowledgeAccessExplainer interface {
-	ExplainKnowledgeAccess(context.Context, KnowledgeAccessExplainRequest, agentsdk.KnowledgeLibrary, agentsdk.ConversationAuthority) (KnowledgeAccessExplanation, error)
+	ExplainKnowledgeAccess(context.Context, KnowledgeAccessExplainRequest, KnowledgeLibrary, Authority) (KnowledgeAccessExplanation, error)
 }
 
 type CollaborationService interface {
@@ -163,8 +161,8 @@ type CollaborationService interface {
 	PageAttachmentService
 	KnowledgePageAccessService
 	KnowledgeRealtimeCollaborationService
-	SearchKnowledgePrincipals(context.Context, string, string, int, agentsdk.ConversationAuthority) (KnowledgePrincipalPage, error)
-	ResolveKnowledgePrincipals(context.Context, []string, agentsdk.ConversationAuthority) ([]KnowledgePrincipal, error)
-	SearchKnowledgeLibraryMembers(context.Context, string, string, string, int, agentsdk.ConversationAuthority) (KnowledgePrincipalPage, error)
-	ExplainKnowledgeAccess(context.Context, string, KnowledgeAccessExplainRequest, agentsdk.ConversationAuthority) (KnowledgeAccessExplanation, error)
+	SearchKnowledgePrincipals(context.Context, string, string, int, Authority) (KnowledgePrincipalPage, error)
+	ResolveKnowledgePrincipals(context.Context, []string, Authority) ([]KnowledgePrincipal, error)
+	SearchKnowledgeLibraryMembers(context.Context, string, string, string, int, Authority) (KnowledgePrincipalPage, error)
+	ExplainKnowledgeAccess(context.Context, string, KnowledgeAccessExplainRequest, Authority) (KnowledgeAccessExplanation, error)
 }

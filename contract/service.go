@@ -1,75 +1,49 @@
-// Package contract defines the optional Knowledge capabilities consumed by hosts.
 package contract
 
 import (
-	context "context"
-	agentsdk "github.com/domainry/domainry-agent-sdk"
-	persistence "github.com/domainry/domainry-agent-sdk/persistence"
+	"context"
+
 	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
+	knowledgepersistence "github.com/domainry/domainry-knowledge-sdk/persistence"
 )
 
-// Service is a host port; storage and business implementations are private to Knowledge.
+// Service is the complete standalone Knowledge application boundary.
 type Service interface {
 	knowledgesdk.PageService
 	knowledgesdk.CollaborationService
-	Artifact(ctx context.Context, id string, version int64, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactVersion, error)
-	ArtifactAccess(ctx context.Context, a agentsdk.ConversationAuthority, key string, input any) (persistence.ConversationArtifactRepository, error)
-	ArtifactBody(ctx context.Context, record persistence.ConversationArtifactRecord, content agentsdk.ConversationArtifactContent, a agentsdk.ConversationAuthority) (persistence.ConversationArtifactRecord, error)
-	ArtifactContent(ctx context.Context, record persistence.ConversationArtifactRecord, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactContent, error)
-	ArtifactOrigin(ctx context.Context, conversationID, runID string, a agentsdk.ConversationAuthority) (*agentsdk.ConversationSources, error)
-	ArtifactVersions(ctx context.Context, id string, before int64, limit int, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactVersions, error)
-	ArtifactView(ctx context.Context, record persistence.ConversationArtifactRecord, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactVersion, error)
-	Artifacts(ctx context.Context, in agentsdk.ConversationArtifactQuery, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactPage, error)
-	Attachment(ctx context.Context, conversationID, id string, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachment, error)
-	AttachmentAccess(ctx context.Context, action string, a agentsdk.ConversationAuthority) (persistence.ConversationAttachmentRepository, error)
-	AttachmentIndexView(ctx context.Context, r persistence.ConversationAttachmentRecord, a agentsdk.ConversationAuthority) agentsdk.ConversationAttachment
-	AttachmentIndexWriteAllowed(ctx context.Context, r persistence.ConversationAttachmentRecord) bool
-	AttachmentKnowledge(ctx context.Context, conversation, op, q, id string, a agentsdk.ConversationAuthority) (agentsdk.ConversationKnowledgeResult, error)
-	AttachmentKnowledgeAccess(ctx context.Context, conversation string, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentKnowledgeScope, map[string]persistence.ConversationAttachmentRecord, error)
-	AttachmentKnowledgeBinding(ctx context.Context, conversation string, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentKnowledgeScope, error)
-	AttachmentRecord(ctx context.Context, repo persistence.ConversationAttachmentRepository, conversationID, id string, a agentsdk.ConversationAuthority) (persistence.ConversationAttachmentRecord, error)
-	AttachmentView(item agentsdk.ConversationAttachment) agentsdk.ConversationAttachment
-	Attachments(ctx context.Context, conversationID, after string, limit int, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentPage, error)
-	AuthorizeAttachmentKnowledgeResult(ctx context.Context, in agentsdk.ConversationToolRequest, result agentsdk.ConversationToolResult) error
-	BindKnowledgeLibrarySource(ctx context.Context, id string, in agentsdk.KnowledgeLibrarySourceWrite, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	CheckAttachmentIndex(ctx context.Context, conversation, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachment, error)
-	Close()
-	CreateArtifact(ctx context.Context, in agentsdk.ConversationArtifactCreate, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactVersion, error)
-	CreateKnowledgeLibrary(ctx context.Context, in agentsdk.KnowledgeLibraryCreate, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	DatasourceAccess(ctx context.Context, id, op string, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	DatasourceDefinitions(ctx context.Context, library string, a agentsdk.ConversationAuthority) ([]agentsdk.KnowledgeDatasourceDefinition, error)
-	DeleteAttachment(ctx context.Context, conversationID, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachment, error)
-	DeleteKnowledgeDocument(ctx context.Context, library, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	RetryKnowledgeDocument(ctx context.Context, library, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	ReindexKnowledgeDocument(ctx context.Context, library, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	DocumentAccess(ctx context.Context, library, op string, a agentsdk.ConversationAuthority) (persistence.KnowledgeDocumentRepository, error)
-	DocumentBinding(ctx context.Context, library string, a agentsdk.ConversationAuthority) (agentsdk.ManagedKnowledgeDocumentSource, error)
-	DownloadArtifact(ctx context.Context, exportID string, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactDownload, error)
-	DownloadAttachment(ctx context.Context, conversationID, id string, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachmentDownload, error)
-	DownloadKnowledgeDocument(ctx context.Context, library, id string, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentDownload, error)
-	EditArtifact(ctx context.Context, id string, in agentsdk.ConversationArtifactEdit, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactVersion, error)
-	ExportArtifact(ctx context.Context, id string, in agentsdk.ConversationArtifactExportRequest, a agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactExport, error)
-	ImportConversationAttachment(ctx context.Context, library string, in agentsdk.KnowledgeAttachmentImport, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	IndexAttachment(ctx context.Context, conversation, id string, expected int64, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachment, error)
-	KnowledgeDocument(ctx context.Context, library, id string, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	KnowledgeDocumentRecord(ctx context.Context, repo persistence.KnowledgeDocumentRepository, library, id string, a agentsdk.ConversationAuthority) (persistence.KnowledgeDocumentRecord, error)
-	KnowledgeDocuments(ctx context.Context, library, after string, limit int, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentPage, error)
-	KnowledgeLibraries(ctx context.Context, after string, limit int, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibraryPage, error)
-	KnowledgeLibrary(ctx context.Context, id string, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	KnowledgeLibraryMembers(ctx context.Context, id, after string, limit int, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibraryMembers, error)
-	KnowledgeLibrarySources(ctx context.Context, id, after string, limit int, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrarySources, error)
-	LibraryAccess(ctx context.Context, op string, a agentsdk.ConversationAuthority) (persistence.KnowledgeLibraryRepository, error)
-	LibraryAuthorize(ctx context.Context, op string, item agentsdk.KnowledgeLibrary, a agentsdk.ConversationAuthority) error
-	LibraryResult(ctx context.Context, item agentsdk.KnowledgeLibrary, err error, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	RemoveKnowledgeLibraryMember(ctx context.Context, id, user string, revision int64, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	SetKnowledgeLibraryMember(ctx context.Context, id, user string, in agentsdk.KnowledgeLibraryMemberWrite, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	Start(parent context.Context)
-	TransferKnowledgeDocument(ctx context.Context, library string, in agentsdk.KnowledgeDocumentTransfer, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	UpdateKnowledgeLibrary(ctx context.Context, id string, in agentsdk.KnowledgeLibraryUpdate, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error)
-	UploadAttachment(ctx context.Context, conversationID string, in agentsdk.ConversationAttachmentUpload, a agentsdk.ConversationAuthority) (agentsdk.ConversationAttachment, error)
-	UploadKnowledgeDocumentChunk(ctx context.Context, library string, in agentsdk.KnowledgeDocumentUploadChunk, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentUploadProgress, error)
-	UploadKnowledgeDocument(ctx context.Context, library string, in agentsdk.KnowledgeDocumentUpload, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	UploadKnowledgeDocumentForSource(ctx context.Context, library string, in agentsdk.KnowledgeDocumentUpload, source agentsdk.KnowledgeDocumentSourceAccess, a agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error)
-	WakeAttachmentIndex()
+
+	CreateKnowledgeLibrary(context.Context, knowledgesdk.KnowledgeLibraryCreate, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	KnowledgeLibraries(context.Context, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibraryPage, error)
+	KnowledgeLibrary(context.Context, string, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	UpdateKnowledgeLibrary(context.Context, string, knowledgesdk.KnowledgeLibraryUpdate, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	KnowledgeLibraryMembers(context.Context, string, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibraryMembers, error)
+	SetKnowledgeLibraryMember(context.Context, string, string, knowledgesdk.KnowledgeLibraryMemberWrite, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	RemoveKnowledgeLibraryMember(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+
+	UploadKnowledgeDocument(context.Context, string, knowledgesdk.KnowledgeDocumentUpload, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	UploadKnowledgeDocumentChunk(context.Context, string, knowledgesdk.KnowledgeDocumentUploadChunk, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentUploadProgress, error)
+	UploadKnowledgeDocumentForSource(context.Context, string, knowledgesdk.KnowledgeDocumentUpload, knowledgesdk.KnowledgeDocumentSourceAccess, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	KnowledgeDocuments(context.Context, string, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentPage, error)
+	KnowledgeDocument(context.Context, string, string, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	DownloadKnowledgeDocument(context.Context, string, string, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentDownload, error)
+	DeleteKnowledgeDocument(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	RetryKnowledgeDocument(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	ReindexKnowledgeDocument(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+	TransferKnowledgeDocument(context.Context, string, knowledgesdk.KnowledgeDocumentTransfer, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
+
+	KnowledgeLibrarySources(context.Context, string, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrarySources, error)
+	BindKnowledgeLibrarySource(context.Context, string, knowledgesdk.KnowledgeLibrarySourceWrite, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+
+	LibraryAccess(context.Context, string, knowledgesdk.Authority) (knowledgepersistence.KnowledgeLibraryRepository, error)
+	DocumentAccess(context.Context, string, string, knowledgesdk.Authority) (knowledgepersistence.KnowledgeDocumentRepository, error)
+	DocumentBinding(context.Context, string, knowledgesdk.Authority) (knowledgesdk.ManagedKnowledgeDocumentSource, error)
+	DatasourceDefinitions(context.Context, string, knowledgesdk.Authority) ([]knowledgesdk.KnowledgeDatasourceDefinition, error)
+	DatasourceAccess(context.Context, string, string, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	LibraryAuthorize(context.Context, string, knowledgesdk.KnowledgeLibrary, knowledgesdk.Authority) error
+	LibraryResult(context.Context, knowledgesdk.KnowledgeLibrary, error, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	KnowledgeDocumentRecord(context.Context, knowledgepersistence.KnowledgeDocumentRepository, string, string, knowledgesdk.Authority) (knowledgepersistence.KnowledgeDocumentRecord, error)
+
+	Start(context.Context)
 	WakeKnowledgeDocuments()
+	Close()
 }

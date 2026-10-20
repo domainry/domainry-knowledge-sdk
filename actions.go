@@ -57,15 +57,14 @@ const (
 	ActionPageAttachmentsSet    = "knowledge.page_attachments.set"
 	ActionPageAttachmentsRemove = "knowledge.page_attachments.remove"
 
-	ActionDocumentsList             = "knowledge.documents.list"
-	ActionDocumentsGet              = "knowledge.documents.get"
-	ActionDocumentsUpload           = "knowledge.documents.upload"
-	ActionDocumentsDownload         = "knowledge.documents.download"
-	ActionDocumentsRetry            = "knowledge.documents.retry"
-	ActionDocumentsReindex          = "knowledge.documents.reindex"
-	ActionDocumentsDelete           = "knowledge.documents.delete"
-	ActionDocumentsTransfer         = "knowledge.documents.transfer"
-	ActionDocumentsImportAttachment = "knowledge.documents.import_attachment"
+	ActionDocumentsList     = "knowledge.documents.list"
+	ActionDocumentsGet      = "knowledge.documents.get"
+	ActionDocumentsUpload   = "knowledge.documents.upload"
+	ActionDocumentsDownload = "knowledge.documents.download"
+	ActionDocumentsRetry    = "knowledge.documents.retry"
+	ActionDocumentsReindex  = "knowledge.documents.reindex"
+	ActionDocumentsDelete   = "knowledge.documents.delete"
+	ActionDocumentsTransfer = "knowledge.documents.transfer"
 
 	ActionSourcesList = "knowledge.sources.list"
 	ActionSourcesBind = "knowledge.sources.bind"
@@ -136,7 +135,6 @@ func AuthorizationActions() ([]actioncontract.ActionDefinition, error) {
 		{ActionDocumentsReindex, "knowledge.documents", "Knowledge documents", "POST", "/knowledge/libraries/{libraryID}/documents/{documentID}/reindex", "Reindex knowledge document", actioncontract.EffectWrite, actioncontract.RiskMedium},
 		{ActionDocumentsDelete, "knowledge.documents", "Knowledge documents", "DELETE", "/knowledge/libraries/{libraryID}/documents/{documentID}", "Delete knowledge document", actioncontract.EffectWrite, actioncontract.RiskHigh},
 		{ActionDocumentsTransfer, "knowledge.documents", "Knowledge documents", "POST", "/knowledge/libraries/{libraryID}/documents/transfer", "Copy or move knowledge document", actioncontract.EffectWrite, actioncontract.RiskHigh},
-		{ActionDocumentsImportAttachment, "knowledge.documents", "Knowledge documents", "POST", "/knowledge/libraries/{libraryID}/documents/import-attachment", "Import conversation attachment", actioncontract.EffectWrite, actioncontract.RiskHigh},
 		{ActionSourcesList, "knowledge.sources", "Knowledge sources", "GET", "/knowledge/libraries/{libraryID}/sources", "List knowledge sources", actioncontract.EffectRead, actioncontract.RiskMedium},
 		{ActionSourcesBind, "knowledge.sources", "Knowledge sources", "PUT", "/knowledge/libraries/{libraryID}/source", "Bind knowledge source", actioncontract.EffectWrite, actioncontract.RiskHigh},
 		{ActionAccessExplain, "knowledge.access", "Knowledge access", "POST", "/knowledge/libraries/{libraryID}/access/explain", "Explain effective knowledge access", actioncontract.EffectRead, actioncontract.RiskMedium},

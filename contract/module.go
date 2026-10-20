@@ -2,66 +2,47 @@ package contract
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 )
 
-type ConversationKnowledge interface {
-	Search(context.Context, string, agentsdk.ConversationAuthority) (json.RawMessage, error)
-}
-type SourcePolicy interface {
-	CheckSources(context.Context, agentsdk.ConversationAuthority, string, *agentsdk.ConversationSources) ([]agentsdk.ConversationRunReference, error)
-	CheckRun(context.Context, agentsdk.ConversationAuthority, string, agentsdk.ConversationRunReference) ([]agentsdk.ConversationRunReference, error)
+// Knowledge is the retrieval capability owned by the Knowledge module.
+type Knowledge interface {
+	SearchKnowledge(context.Context, string, knowledgesdk.Authority) (knowledgesdk.Result, error)
+	ReadKnowledge(context.Context, string, knowledgesdk.Authority) (knowledgesdk.Result, error)
+	RevalidateKnowledge(context.Context, knowledgesdk.Result, knowledgesdk.Authority) error
 }
 
-// ContextReader is the narrow Agent-owned read port required by Knowledge to
-// validate a referenced conversation or completed run. Remote clients answer
-// server challenges through this port; no repository or Store crosses the
-// network boundary.
-type ContextReader interface {
-	Conversation(context.Context, string, agentsdk.ConversationAuthority) (agentsdk.Conversation, error)
-	Run(context.Context, string, string, agentsdk.ConversationAuthority) (agentsdk.ConversationRun, error)
-}
 type Options struct {
-	DocumentStorage           agentsdk.KnowledgeDocumentStorage
+	DocumentStorage           knowledgesdk.KnowledgeDocumentStorage
 	DocumentSecurity          DocumentSecurityScanner
 	DocumentPoll              time.Duration
 	DocumentWorkTimeout       time.Duration
 	DocumentUploadIdleTimeout time.Duration
 	LibraryKnowledge          []LibraryKnowledgeBinding
-	KnowledgeDatasources      agentsdk.KnowledgeDatasourceCatalog
-	LibraryAuthorizer         agentsdk.KnowledgeLibraryAuthorizer
-	SourceAuthorizer          agentsdk.KnowledgeDocumentSourceAuthorizer
-	AttachmentAuthorizer      agentsdk.ConversationAttachmentAuthorizer
-	AttachmentKnowledge       []agentsdk.ConversationAttachmentKnowledgeBinding
-	ArtifactStorage           agentsdk.ConversationArtifactStorage
-	ArtifactExportTTL         time.Duration
-	PersonalAuthorizer        agentsdk.ConversationToolAuthorizer
-	Knowledge                 ConversationKnowledge
-	Sources                   SourcePolicy
-	Context                   ContextReader
+	KnowledgeDatasources      knowledgesdk.KnowledgeDatasourceCatalog
+	LibraryAuthorizer         knowledgesdk.KnowledgeLibraryAuthorizer
+	SourceAuthorizer          knowledgesdk.KnowledgeDocumentSourceAuthorizer
+	Knowledge                 Knowledge
 	PrincipalDirectory        knowledgesdk.KnowledgePrincipalDirectory
 	AccessExplainer           knowledgesdk.KnowledgeAccessExplainer
 	AuditAppender             knowledgesdk.KnowledgeAuditAppender
 	CollaborationPublisher    knowledgesdk.KnowledgeCollaborationPublisher
 }
+
 type LibraryKnowledgeBinding struct {
 	WorkspaceID     string
 	LibraryID       string
-	Source          agentsdk.ConversationKnowledgeSource
-	ManageDocuments bool // Trusted host opt-in; never a client supplied grant.
+	Source          knowledgesdk.Source
+	ManageDocuments bool
 }
 
-// Runtime is a process-local Knowledge capability whose private repository was
-// already opened by the Knowledge module. Agent never supplies a Store here.
 type Runtime interface {
 	Validate(*Options) error
-	Prepare(string, Options) (ConversationKnowledge, error)
+	Prepare(string, Options) (Knowledge, error)
 	Activate(string, Options) error
 	NewService(string, Options) Service
 }

@@ -1,13 +1,9 @@
 package contract
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
-
-	agentsdk "github.com/domainry/domainry-agent-sdk"
-	persistence "github.com/domainry/domainry-agent-sdk/persistence"
 )
 
 const (
@@ -16,10 +12,6 @@ const (
 )
 
 var SaaSCapabilitiesV1 = []string{
-	"artifacts.read",
-	"artifacts.write",
-	"attachments.read",
-	"attachments.write",
 	"files.read",
 	"files.write",
 	"knowledge_documents.read",
@@ -28,7 +20,6 @@ var SaaSCapabilitiesV1 = []string{
 	"knowledge_libraries.write",
 	"knowledge_sources.read",
 	"runtime.knowledge",
-	"subjects.lifecycle",
 }
 
 // Descriptor is returned by the SaaS discovery endpoint before a client is
@@ -55,13 +46,4 @@ func (descriptor Descriptor) Validate() error {
 		return fmt.Errorf("Knowledge SaaS protocol capabilities are unsupported")
 	}
 	return nil
-}
-
-// ArtifactMutationService is the deployment-neutral idempotent artifact write
-// boundary. Module mode may additionally provide a caller-owned SQL transaction
-// extension, but SaaS callers only use these Knowledge-owned commands.
-type ArtifactMutationService interface {
-	ArtifactRecord(context.Context, string, int64, agentsdk.ConversationAuthority) (persistence.ConversationArtifactRecord, error)
-	SaveArtifact(context.Context, persistence.ConversationArtifactWrite, agentsdk.ConversationAuthority) (persistence.ConversationArtifactRecord, error)
-	SaveArtifactExport(context.Context, persistence.ConversationArtifactExportWrite, agentsdk.ConversationAuthority) (agentsdk.ConversationArtifactExport, error)
 }

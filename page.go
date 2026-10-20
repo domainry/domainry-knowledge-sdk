@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
-
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 )
 
 // PageContentSchemaVersion is the canonical page payload contract. Version 2
@@ -212,7 +210,7 @@ type KnowledgePageConflict struct {
 // canonical classified error so errors.As continues to work for existing
 // authorization and HTTP status handling.
 type KnowledgePageConflictError struct {
-	Err      *agentsdk.Error
+	Err      *Error
 	Conflict KnowledgePageConflict
 }
 
@@ -243,26 +241,26 @@ func NewKnowledgePageConflictError(code string, conflict KnowledgePageConflict) 
 		code = "page_draft_revision_conflict"
 	}
 	return &KnowledgePageConflictError{
-		Err:      &agentsdk.Error{Class: "conflict", Code: code},
+		Err:      &Error{Class: "conflict", Code: code},
 		Conflict: conflict,
 	}
 }
 
 type PageService interface {
-	KnowledgePages(context.Context, string, string, string, int, bool, agentsdk.ConversationAuthority) (KnowledgePagePage, error)
-	KnowledgePage(context.Context, string, string, bool, agentsdk.ConversationAuthority) (KnowledgePageView, error)
-	CreateKnowledgePage(context.Context, string, KnowledgePageCreate, agentsdk.ConversationAuthority) (KnowledgePageView, error)
-	SaveKnowledgePageDraft(context.Context, string, string, KnowledgePageDraftWrite, agentsdk.ConversationAuthority) (KnowledgePageView, error)
-	MoveKnowledgePage(context.Context, string, string, KnowledgePageMove, agentsdk.ConversationAuthority) (KnowledgePage, error)
-	PreviewKnowledgePageMove(context.Context, string, string, KnowledgePageMovePreview, agentsdk.ConversationAuthority) (KnowledgePageMoveImpact, error)
-	ReorderKnowledgePages(context.Context, string, KnowledgePageReorder, agentsdk.ConversationAuthority) (KnowledgePagePage, error)
-	CopyKnowledgePage(context.Context, string, string, KnowledgePageCopy, agentsdk.ConversationAuthority) (KnowledgePageView, error)
-	SetKnowledgePageArchived(context.Context, string, string, bool, KnowledgePageStateWrite, agentsdk.ConversationAuthority) (KnowledgePage, error)
-	PublishKnowledgePage(context.Context, string, string, KnowledgePagePublish, agentsdk.ConversationAuthority) (KnowledgePageView, error)
-	KnowledgePageVersions(context.Context, string, string, int64, int, agentsdk.ConversationAuthority) (KnowledgePageVersionPage, error)
-	KnowledgePageVersion(context.Context, string, string, int64, agentsdk.ConversationAuthority) (KnowledgePageVersion, error)
-	DiffKnowledgePageVersions(context.Context, string, string, KnowledgePageVersionDiffInput, agentsdk.ConversationAuthority) (KnowledgePageVersionDiff, error)
-	RestoreKnowledgePageVersion(context.Context, string, string, int64, KnowledgePageRestoreVersion, agentsdk.ConversationAuthority) (KnowledgePageView, error)
+	KnowledgePages(context.Context, string, string, string, int, bool, Authority) (KnowledgePagePage, error)
+	KnowledgePage(context.Context, string, string, bool, Authority) (KnowledgePageView, error)
+	CreateKnowledgePage(context.Context, string, KnowledgePageCreate, Authority) (KnowledgePageView, error)
+	SaveKnowledgePageDraft(context.Context, string, string, KnowledgePageDraftWrite, Authority) (KnowledgePageView, error)
+	MoveKnowledgePage(context.Context, string, string, KnowledgePageMove, Authority) (KnowledgePage, error)
+	PreviewKnowledgePageMove(context.Context, string, string, KnowledgePageMovePreview, Authority) (KnowledgePageMoveImpact, error)
+	ReorderKnowledgePages(context.Context, string, KnowledgePageReorder, Authority) (KnowledgePagePage, error)
+	CopyKnowledgePage(context.Context, string, string, KnowledgePageCopy, Authority) (KnowledgePageView, error)
+	SetKnowledgePageArchived(context.Context, string, string, bool, KnowledgePageStateWrite, Authority) (KnowledgePage, error)
+	PublishKnowledgePage(context.Context, string, string, KnowledgePagePublish, Authority) (KnowledgePageView, error)
+	KnowledgePageVersions(context.Context, string, string, int64, int, Authority) (KnowledgePageVersionPage, error)
+	KnowledgePageVersion(context.Context, string, string, int64, Authority) (KnowledgePageVersion, error)
+	DiffKnowledgePageVersions(context.Context, string, string, KnowledgePageVersionDiffInput, Authority) (KnowledgePageVersionDiff, error)
+	RestoreKnowledgePageVersion(context.Context, string, string, int64, KnowledgePageRestoreVersion, Authority) (KnowledgePageView, error)
 }
 
 const (
@@ -324,8 +322,8 @@ type KnowledgePageMoveImpact struct {
 }
 
 type KnowledgePageAccessService interface {
-	KnowledgePageAccess(context.Context, string, string, agentsdk.ConversationAuthority) (KnowledgePageAccessPolicy, error)
-	SetKnowledgePageAccess(context.Context, string, string, KnowledgePageAccessWrite, agentsdk.ConversationAuthority) (KnowledgePageAccessPolicy, error)
+	KnowledgePageAccess(context.Context, string, string, Authority) (KnowledgePageAccessPolicy, error)
+	SetKnowledgePageAccess(context.Context, string, string, KnowledgePageAccessWrite, Authority) (KnowledgePageAccessPolicy, error)
 }
 
 // KnowledgePageAccessRepository is the trusted server-side policy boundary
@@ -333,9 +331,9 @@ type KnowledgePageAccessService interface {
 // derived by Knowledge and are never accepted from browser input.
 type KnowledgePageAccessRepository interface {
 	KnowledgePageAccessService
-	EvaluateKnowledgePageAccess(context.Context, string, string, agentsdk.ConversationAuthority) (KnowledgePageEffectiveAccess, error)
-	KnowledgePagePermissionTokens(context.Context, string, agentsdk.ConversationAuthority) ([]string, error)
-	KnowledgePageProjectionPermission(context.Context, string, string, agentsdk.ConversationAuthority) (string, int64, error)
+	EvaluateKnowledgePageAccess(context.Context, string, string, Authority) (KnowledgePageEffectiveAccess, error)
+	KnowledgePagePermissionTokens(context.Context, string, Authority) ([]string, error)
+	KnowledgePageProjectionPermission(context.Context, string, string, Authority) (string, int64, error)
 }
 
 // JSONClone provides a small contract-test helper without defining a second

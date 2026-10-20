@@ -7,7 +7,6 @@ import (
 	"context"
 
 	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
-	lifecyclecontract "github.com/domainry/domainry-lifecycle-sdk/contract"
 )
 
 const RuntimeIDHeader = "X-Domainry-Runtime-ID"
@@ -15,8 +14,6 @@ const RuntimeIDHeader = "X-Domainry-Runtime-ID"
 type Binding interface {
 	Descriptor() knowledgecontract.Descriptor
 	Runtime() knowledgecontract.Runtime
-	ArtifactMutations() knowledgecontract.ArtifactMutationService
-	SubjectLifecycle() lifecyclecontract.SubjectExecutionHandler
 	Close(context.Context) error
 }
 

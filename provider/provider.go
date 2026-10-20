@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 	connector "github.com/domainry/domainry-connector-sdk"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 	"github.com/domainry/domainry-knowledge-sdk/contract"
 )
 
@@ -63,8 +63,8 @@ type Config struct {
 	SearchRecordKinds                          []string
 	Client                                     *http.Client
 	Transport                                  connector.Transport
-	PermissionIDs                              func(context.Context, agentsdk.ConversationAuthority) ([]string, error)
-	AuthorizeWorkspace                         func(context.Context, agentsdk.ConversationAuthority) error
+	PermissionIDs                              func(context.Context, knowledgesdk.Authority) ([]string, error)
+	AuthorizeWorkspace                         func(context.Context, knowledgesdk.Authority) error
 }
 
 func (config Config) Configured() bool {
@@ -75,29 +75,26 @@ func (config Config) Configured() bool {
 		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil
 }
 
-// ConfigFromEnvironment parses Agent's default Knowledge source configuration
-// without selecting an implementation. The outer composition root supplies the
-// Factory separately.
+// ConfigFromEnvironment parses the standalone Knowledge product's source
+// configuration without selecting an implementation. The outer composition
+// root supplies the Factory separately.
 func ConfigFromEnvironment() Config {
 	config := Config{
-		BaseURL:     os.Getenv("AGENT_KNOWLEDGE_BASE_URL"),
-		APIKey:      os.Getenv("AGENT_KNOWLEDGE_API_KEY"),
-		TeamID:      os.Getenv("AGENT_KNOWLEDGE_TEAM_ID"),
-		KBID:        os.Getenv("AGENT_KNOWLEDGE_KB_ID"),
-		WorkspaceID: os.Getenv("AGENT_KNOWLEDGE_WORKSPACE_ID"),
+		BaseURL:     os.Getenv("KNOWLEDGE_PROVIDER_BASE_URL"),
+		APIKey:      os.Getenv("KNOWLEDGE_PROVIDER_API_KEY"),
+		TeamID:      os.Getenv("KNOWLEDGE_PROVIDER_TEAM_ID"),
+		KBID:        os.Getenv("KNOWLEDGE_PROVIDER_KB_ID"),
+		WorkspaceID: os.Getenv("KNOWLEDGE_PROVIDER_WORKSPACE_ID"),
 	}
-	if strings.TrimSpace(config.APIKey) == "" {
-		config.APIKey = os.Getenv("AGENT_PROVIDER_API_KEY")
-	}
-	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_TOP_K")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_TOP_K")); raw != "" {
 		value, err := strconv.Atoi(raw)
 		if err != nil || value < 1 {
 			value = -1
 		}
 		config.TopK = value
 	}
-	config.SearchMode = strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_SEARCH_MODE"))
-	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RERANK")); raw != "" {
+	config.SearchMode = strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_SEARCH_MODE"))
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_RERANK")); raw != "" {
 		value, err := strconv.ParseBool(raw)
 		if err != nil {
 			config.InvalidSearchConfig = true
@@ -105,16 +102,32 @@ func ConfigFromEnvironment() Config {
 			config.SearchRerank = &value
 		}
 	}
-	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RECORD_KINDS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_RECORD_KINDS")); raw != "" {
 		if json.Unmarshal([]byte(raw), &config.SearchRecordKinds) != nil {
 			config.InvalidSearchConfig = true
 		}
 	}
-	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RESPONSE_MAPPING")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_RESPONSE_MAPPING")); raw != "" {
 		config.ResponseMapping, config.InvalidResponseMapping = parseResponseMapping(raw)
 	}
-	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_ANALYSIS_DOCUMENT_IDS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_ANALYSIS_DOCUMENT_IDS")); raw != "" {
 		config.InvalidAnalysisDocumentIDs = json.Unmarshal([]byte(raw), &config.AnalysisDocumentIDs) != nil
+	}
+	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_DOCUMENT_MANAGEMENT")); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			config.InvalidSearchConfig = true
+		} else {
+			config.DocumentManagement = value
+		}
+	}
+	for key, target := range map[string]*[]string{
+		"KNOWLEDGE_PROVIDER_DOCUMENT_PERMISSION_IDS": &config.DocumentPermissionIDs,
+		"KNOWLEDGE_PROVIDER_READ_PERMISSION_IDS":     &config.ReadPermissionIDs,
+	} {
+		if raw := strings.TrimSpace(os.Getenv(key)); raw != "" && json.Unmarshal([]byte(raw), target) != nil {
+			config.InvalidSearchConfig = true
+		}
 	}
 	return config
 }
@@ -133,11 +146,10 @@ func parseResponseMapping(raw string) (*ResponseMapping, bool) {
 	return &mapping, false
 }
 
-// Source supports the three public views required by Agent's default,
-// library and datasource configurations.
+// Source supports default, library and datasource configurations.
 type Source interface {
-	contract.ConversationKnowledge
-	agentsdk.KnowledgeDatasourceSource
+	contract.Knowledge
+	knowledgesdk.KnowledgeDatasourceSource
 }
 
 // AdapterFactory is supplied by the outer product composition root. Knowledge
@@ -147,7 +159,6 @@ type AdapterFactory func(connector.Transport) (connector.Adapter, error)
 
 type Factory interface {
 	NewSource(Config) (Source, error)
-	NewAttachmentSource(Config, string) (agentsdk.ConversationAttachmentKnowledge, error)
 }
 
 func RequireFactory(factory Factory, configured bool) error {

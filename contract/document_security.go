@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 )
 
 // DocumentSecurityScanner runs while the immutable original is quarantined.
@@ -15,7 +15,7 @@ type DocumentSecurityScanner interface {
 }
 
 type KnowledgeDocumentSecurityInput struct {
-	Document agentsdk.KnowledgeDocument
+	Document knowledgesdk.KnowledgeDocument
 	Content  io.ReadSeeker
 }
 

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	agentsdk "github.com/domainry/domainry-agent-sdk"
 	"github.com/domainry/domainry-foundation/telemetry"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
 	"github.com/domainry/domainry-knowledge-sdk/saashost"
 )
@@ -45,7 +45,7 @@ func (c *client) streamHTTPClient() *http.Client {
 }
 
 func (c *client) uploadStream(ctx context.Context, path string, metadata any, content io.Reader, expectedBytes int64, output any) error {
-	if ctx == nil || content == nil || expectedBytes < 1 || expectedBytes > agentsdk.KnowledgeDocumentMaximumBytes {
+	if ctx == nil || content == nil || expectedBytes < 1 || expectedBytes > knowledgesdk.KnowledgeDocumentMaximumBytes {
 		return remoteError("bad_request", "knowledge.document_content_invalid", false, nil)
 	}
 	raw, err := json.Marshal(metadata)
@@ -130,7 +130,7 @@ func decodeStreamResponse(response *http.Response, limit int64, output any) erro
 		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
 	}
 	if envelope.Error != nil {
-		return &agentsdk.Error{Class: safeClass(envelope.Error.Class), Code: safeCode(envelope.Error.Code), Message: safeMessage(envelope.Error.Message), Retryable: envelope.Error.Retryable}
+		return &knowledgesdk.Error{Class: safeClass(envelope.Error.Class), Code: safeCode(envelope.Error.Code), Message: safeMessage(envelope.Error.Message), Retryable: envelope.Error.Retryable}
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
@@ -157,7 +157,7 @@ func encodeTransferHeader(value knowledgecontract.SaaSDocumentDownloadRequest) (
 type rangeDocumentReader struct {
 	client         *client
 	ctx            context.Context
-	document       agentsdk.KnowledgeDocument
+	document       knowledgesdk.KnowledgeDocument
 	transferHeader string
 	offset         int64
 	responseEnd    int64
