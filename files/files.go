@@ -89,3 +89,37 @@ func (value *Error) Unwrap() error {
 	}
 	return value.Cause
 }
+
+func (value *Error) ApplicationErrorKind() string {
+	if value == nil {
+		return ""
+	}
+	switch strings.ToLower(strings.TrimSpace(value.Class)) {
+	case "bad_request", "invalid":
+		return "bad_request"
+	case "forbidden", "unauthenticated", "unauthorized":
+		return "forbidden"
+	case "not_found":
+		return "not_found"
+	case "conflict":
+		return "conflict"
+	case "rate_limited":
+		return "rate_limited"
+	case "unavailable":
+		return "unavailable"
+	default:
+		if value.Retryable {
+			return "unavailable"
+		}
+		return "internal"
+	}
+}
+
+func (value *Error) ErrorCode() string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(value.Code)
+}
+
+func (*Error) ErrorParams() map[string]string { return nil }
