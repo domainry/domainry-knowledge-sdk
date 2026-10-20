@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/domainry/domainry-foundation/telemetry"
 )
 
 const (
@@ -98,7 +100,7 @@ func newRemoteClient(config RemoteConfig, runtimeID string) (*remoteClient, erro
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: config.RequestTimeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	}
-	return &remoteClient{baseURL: base, runtimeID: runtimeID, token: strings.TrimSpace(config.ServiceAccessToken), httpClient: httpClient, requestLimit: config.MaxRequestBytes, responseLimit: config.MaxResponseBytes}, nil
+	return &remoteClient{baseURL: base, runtimeID: runtimeID, token: strings.TrimSpace(config.ServiceAccessToken), httpClient: telemetry.InstrumentHTTPClient(httpClient, "github.com/domainry/domainry-knowledge-sdk/files"), requestLimit: config.MaxRequestBytes, responseLimit: config.MaxResponseBytes}, nil
 }
 
 func (client *remoteClient) Upload(ctx context.Context, authority Authority, input Upload) (File, error) {
@@ -180,6 +182,7 @@ func (client *remoteClient) request(ctx context.Context, method, requestPath str
 	}
 	endpoint := *client.baseURL
 	endpoint.Path = strings.TrimRight(client.baseURL.Path, "/") + "/" + strings.TrimLeft(requestPath, "/")
+	ctx = telemetry.WithHTTPClientOperation(ctx, "knowledge.files.remote")
 	request, err := http.NewRequestWithContext(ctx, method, endpoint.String(), body)
 	if err != nil {
 		return &Error{Class: "unavailable", Code: "knowledge.request_invalid", Cause: err}

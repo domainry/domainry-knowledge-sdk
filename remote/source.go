@@ -5,16 +5,18 @@ import (
 	"fmt"
 
 	agentsdk "github.com/domainry/domainry-agent-sdk"
+	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
 )
 
 type remoteSourceDescriptor struct {
-	Handle                string   `json:"handle"`
-	Identity              string   `json:"identity"`
-	DocumentPermissionIDs []string `json:"document_permission_ids,omitempty"`
-	ReadPermissionIDs     []string `json:"read_permission_ids,omitempty"`
-	AccessPolicySHA256    string   `json:"access_policy_sha256,omitempty"`
-	MaxBytes              int64    `json:"max_bytes,omitempty"`
-	Ready                 bool     `json:"ready"`
+	Handle                string                             `json:"handle"`
+	Identity              string                             `json:"identity"`
+	DocumentPermissionIDs []string                           `json:"document_permission_ids,omitempty"`
+	ReadPermissionIDs     []string                           `json:"read_permission_ids,omitempty"`
+	AccessPolicySHA256    string                             `json:"access_policy_sha256,omitempty"`
+	IndexMaxBytes         int64                              `json:"index_max_bytes,omitempty"`
+	DocumentFormats       []agentsdk.KnowledgeDocumentFormat `json:"document_formats,omitempty"`
+	Ready                 bool                               `json:"ready"`
 }
 
 type managedSource struct {
@@ -29,7 +31,12 @@ func (value managedSource) AttachmentKnowledgeSourceIdentity() string {
 func (value managedSource) KnowledgeDocumentAccessPolicySHA256() string {
 	return value.descriptor.AccessPolicySHA256
 }
-func (value managedSource) KnowledgeDocumentMaxBytes() int64 { return value.descriptor.MaxBytes }
+func (value managedSource) KnowledgeDocumentIndexMaximumBytes() int64 {
+	return value.descriptor.IndexMaxBytes
+}
+func (value managedSource) KnowledgeDocumentFormats() []agentsdk.KnowledgeDocumentFormat {
+	return append([]agentsdk.KnowledgeDocumentFormat(nil), value.descriptor.DocumentFormats...)
+}
 func (value managedSource) KnowledgeDocumentManagementReady() error {
 	if !value.descriptor.Ready {
 		return fmt.Errorf("Knowledge document source is unavailable")
@@ -37,11 +44,9 @@ func (value managedSource) KnowledgeDocumentManagementReady() error {
 	return nil
 }
 func (value managedSource) PutKnowledgeDocument(ctx context.Context, input agentsdk.KnowledgeDocumentContent, authority agentsdk.ConversationAuthority) error {
-	return value.client.invoke(ctx, "source.document.put", struct {
-		Handle    string                            `json:"handle"`
-		Input     agentsdk.KnowledgeDocumentContent `json:"input"`
-		Authority agentsdk.ConversationAuthority    `json:"authority"`
-	}{value.descriptor.Handle, input, authority}, nil)
+	return value.client.uploadStream(ctx, knowledgecontract.SaaSSourceDocumentPutPath, knowledgecontract.SaaSSourceDocumentPutRequest{
+		Handle: value.descriptor.Handle, Input: input, Authority: authority,
+	}, input.Content, input.Bytes, nil)
 }
 func (value managedSource) InspectKnowledgeDocument(ctx context.Context, id string, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentState, error) {
 	var output agentsdk.KnowledgeDocumentState

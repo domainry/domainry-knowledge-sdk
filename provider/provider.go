@@ -20,13 +20,22 @@ import (
 // CitationMapping selects trusted citation fields from a provider response.
 // Pointers use RFC 6901 syntax and are validated by the implementation.
 type CitationMapping struct {
-	MetadataObject *string `json:"metadata_object,omitempty"`
-	Items          string  `json:"items"`
-	Many           bool    `json:"many,omitempty"`
-	DocumentID     string  `json:"doc_id,omitempty"`
-	Title          string  `json:"title,omitempty"`
-	URL            string  `json:"url,omitempty"`
-	Excerpt        string  `json:"excerpt,omitempty"`
+	MetadataObject  *string `json:"metadata_object,omitempty"`
+	Items           string  `json:"items"`
+	Many            bool    `json:"many,omitempty"`
+	DocumentID      string  `json:"doc_id,omitempty"`
+	Title           string  `json:"title,omitempty"`
+	URL             string  `json:"url,omitempty"`
+	Excerpt         string  `json:"excerpt,omitempty"`
+	ChunkID         string  `json:"chunk_id,omitempty"`
+	DocumentVersion string  `json:"document_version,omitempty"`
+	ContentSHA256   string  `json:"content_sha256,omitempty"`
+	SourceRevision  string  `json:"source_revision,omitempty"`
+	Page            string  `json:"page,omitempty"`
+	Section         string  `json:"section,omitempty"`
+	AnchorRef       string  `json:"anchor_ref,omitempty"`
+	RecordKind      string  `json:"record_kind,omitempty"`
+	Score           string  `json:"score,omitempty"`
 }
 
 type ResponseMapping struct {
@@ -45,9 +54,13 @@ type Config struct {
 	ResponseMapping                            *ResponseMapping
 	InvalidResponseMapping                     bool
 	InvalidAnalysisDocumentIDs                 bool
+	InvalidSearchConfig                        bool
 	BaseURL, APIKey, TeamID, KBID, WorkspaceID string
 	RuntimeID                                  string
 	TopK                                       int
+	SearchMode                                 string
+	SearchRerank                               *bool
+	SearchRecordKinds                          []string
 	Client                                     *http.Client
 	Transport                                  connector.Transport
 	PermissionIDs                              func(context.Context, agentsdk.ConversationAuthority) ([]string, error)
@@ -57,7 +70,8 @@ type Config struct {
 func (config Config) Configured() bool {
 	return strings.TrimSpace(config.BaseURL+config.TeamID+config.KBID+config.WorkspaceID) != "" ||
 		config.TopK != 0 || config.ResponseMapping != nil || config.InvalidResponseMapping ||
-		config.InvalidAnalysisDocumentIDs || config.DocumentManagement ||
+		config.InvalidAnalysisDocumentIDs || config.InvalidSearchConfig || config.DocumentManagement ||
+		config.SearchMode != "" || config.SearchRerank != nil || config.SearchRecordKinds != nil ||
 		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil
 }
 
@@ -81,6 +95,20 @@ func ConfigFromEnvironment() Config {
 			value = -1
 		}
 		config.TopK = value
+	}
+	config.SearchMode = strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_SEARCH_MODE"))
+	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RERANK")); raw != "" {
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			config.InvalidSearchConfig = true
+		} else {
+			config.SearchRerank = &value
+		}
+	}
+	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RECORD_KINDS")); raw != "" {
+		if json.Unmarshal([]byte(raw), &config.SearchRecordKinds) != nil {
+			config.InvalidSearchConfig = true
+		}
 	}
 	if raw := strings.TrimSpace(os.Getenv("AGENT_KNOWLEDGE_RESPONSE_MAPPING")); raw != "" {
 		config.ResponseMapping, config.InvalidResponseMapping = parseResponseMapping(raw)

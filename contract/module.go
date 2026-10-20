@@ -8,6 +8,7 @@ import (
 	"time"
 
 	agentsdk "github.com/domainry/domainry-agent-sdk"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 )
 
 type ConversationKnowledge interface {
@@ -27,20 +28,27 @@ type ContextReader interface {
 	Run(context.Context, string, string, agentsdk.ConversationAuthority) (agentsdk.ConversationRun, error)
 }
 type Options struct {
-	DocumentStorage      agentsdk.KnowledgeDocumentStorage
-	DocumentPoll         time.Duration
-	LibraryKnowledge     []LibraryKnowledgeBinding
-	KnowledgeDatasources agentsdk.KnowledgeDatasourceCatalog
-	LibraryAuthorizer    agentsdk.KnowledgeLibraryAuthorizer
-	SourceAuthorizer     agentsdk.KnowledgeDocumentSourceAuthorizer
-	AttachmentAuthorizer agentsdk.ConversationAttachmentAuthorizer
-	AttachmentKnowledge  []agentsdk.ConversationAttachmentKnowledgeBinding
-	ArtifactStorage      agentsdk.ConversationArtifactStorage
-	ArtifactExportTTL    time.Duration
-	PersonalAuthorizer   agentsdk.ConversationToolAuthorizer
-	Knowledge            ConversationKnowledge
-	Sources              SourcePolicy
-	Context              ContextReader
+	DocumentStorage           agentsdk.KnowledgeDocumentStorage
+	DocumentSecurity          DocumentSecurityScanner
+	DocumentPoll              time.Duration
+	DocumentWorkTimeout       time.Duration
+	DocumentUploadIdleTimeout time.Duration
+	LibraryKnowledge          []LibraryKnowledgeBinding
+	KnowledgeDatasources      agentsdk.KnowledgeDatasourceCatalog
+	LibraryAuthorizer         agentsdk.KnowledgeLibraryAuthorizer
+	SourceAuthorizer          agentsdk.KnowledgeDocumentSourceAuthorizer
+	AttachmentAuthorizer      agentsdk.ConversationAttachmentAuthorizer
+	AttachmentKnowledge       []agentsdk.ConversationAttachmentKnowledgeBinding
+	ArtifactStorage           agentsdk.ConversationArtifactStorage
+	ArtifactExportTTL         time.Duration
+	PersonalAuthorizer        agentsdk.ConversationToolAuthorizer
+	Knowledge                 ConversationKnowledge
+	Sources                   SourcePolicy
+	Context                   ContextReader
+	PrincipalDirectory        knowledgesdk.KnowledgePrincipalDirectory
+	AccessExplainer           knowledgesdk.KnowledgeAccessExplainer
+	AuditAppender             knowledgesdk.KnowledgeAuditAppender
+	CollaborationPublisher    knowledgesdk.KnowledgeCollaborationPublisher
 }
 type LibraryKnowledgeBinding struct {
 	WorkspaceID     string

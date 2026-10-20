@@ -7,6 +7,7 @@ import (
 
 	agentsdk "github.com/domainry/domainry-agent-sdk"
 	"github.com/domainry/domainry-agent-sdk/persistence"
+	knowledgesdk "github.com/domainry/domainry-knowledge-sdk"
 	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
 )
 
@@ -349,7 +350,7 @@ func (value attachmentRepository) DeleteAttachmentContent(ctx context.Context, i
 
 func (value *serviceClient) BindKnowledgeLibrarySource(ctx context.Context, id string, input agentsdk.KnowledgeLibrarySourceWrite, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library_source_bind", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionSourcesBind, struct {
 		ID        string                               `json:"id"`
 		Input     agentsdk.KnowledgeLibrarySourceWrite `json:"input"`
 		Authority agentsdk.ConversationAuthority       `json:"authority"`
@@ -358,7 +359,7 @@ func (value *serviceClient) BindKnowledgeLibrarySource(ctx context.Context, id s
 }
 func (value *serviceClient) CreateKnowledgeLibrary(ctx context.Context, input agentsdk.KnowledgeLibraryCreate, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library_create", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibrariesCreate, struct {
 		Input     agentsdk.KnowledgeLibraryCreate `json:"input"`
 		Authority agentsdk.ConversationAuthority  `json:"authority"`
 	}{input, authority}, &output)
@@ -383,7 +384,27 @@ func (value *serviceClient) DatasourceDefinitions(ctx context.Context, library s
 }
 func (value *serviceClient) DeleteKnowledgeDocument(ctx context.Context, library, id string, expected int64, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
 	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_delete", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsDelete, struct {
+		Library   string                         `json:"library"`
+		ID        string                         `json:"id"`
+		Expected  int64                          `json:"expected"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{library, id, expected, authority}, &output)
+	return output, err
+}
+func (value *serviceClient) RetryKnowledgeDocument(ctx context.Context, library, id string, expected int64, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
+	var output agentsdk.KnowledgeDocument
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsRetry, struct {
+		Library   string                         `json:"library"`
+		ID        string                         `json:"id"`
+		Expected  int64                          `json:"expected"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{library, id, expected, authority}, &output)
+	return output, err
+}
+func (value *serviceClient) ReindexKnowledgeDocument(ctx context.Context, library, id string, expected int64, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
+	var output agentsdk.KnowledgeDocument
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsReindex, struct {
 		Library   string                         `json:"library"`
 		ID        string                         `json:"id"`
 		Expected  int64                          `json:"expected"`
@@ -413,17 +434,25 @@ func (value *serviceClient) DocumentBinding(ctx context.Context, library string,
 	return managedSource{client: value.client, descriptor: output}, nil
 }
 func (value *serviceClient) DownloadKnowledgeDocument(ctx context.Context, library, id string, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentDownload, error) {
-	var output agentsdk.KnowledgeDocumentDownload
-	err := value.invoke(ctx, "service.document_download", struct {
-		Library   string                         `json:"library"`
-		ID        string                         `json:"id"`
-		Authority agentsdk.ConversationAuthority `json:"authority"`
-	}{library, id, authority}, &output)
-	return output, err
+	request := knowledgecontract.SaaSDocumentDownloadRequest{Library: library, ID: id, Authority: authority}
+	var document agentsdk.KnowledgeDocument
+	grants, err := value.client.invokeWithGrants(ctx, knowledgecontract.SaaSDocumentDownloadPrepareOperation, request, &document, value.options)
+	if err != nil {
+		return agentsdk.KnowledgeDocumentDownload{}, err
+	}
+	request.Grants = grants
+	header, err := encodeTransferHeader(request)
+	if err != nil {
+		return agentsdk.KnowledgeDocumentDownload{}, err
+	}
+	return agentsdk.KnowledgeDocumentDownload{
+		Document: document,
+		Content:  &rangeDocumentReader{client: value.client, ctx: ctx, document: document, transferHeader: header},
+	}, nil
 }
 func (value *serviceClient) ImportConversationAttachment(ctx context.Context, library string, input agentsdk.KnowledgeAttachmentImport, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
 	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_import_attachment", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsImportAttachment, struct {
 		Library   string                             `json:"library"`
 		Input     agentsdk.KnowledgeAttachmentImport `json:"input"`
 		Authority agentsdk.ConversationAuthority     `json:"authority"`
@@ -432,7 +461,7 @@ func (value *serviceClient) ImportConversationAttachment(ctx context.Context, li
 }
 func (value *serviceClient) KnowledgeDocument(ctx context.Context, library, id string, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
 	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsGet, struct {
 		Library   string                         `json:"library"`
 		ID        string                         `json:"id"`
 		Authority agentsdk.ConversationAuthority `json:"authority"`
@@ -450,7 +479,7 @@ func (value *serviceClient) KnowledgeDocumentRecord(ctx context.Context, _ persi
 }
 func (value *serviceClient) KnowledgeDocuments(ctx context.Context, library, after string, limit int, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentPage, error) {
 	var output agentsdk.KnowledgeDocumentPage
-	err := value.invoke(ctx, "service.documents", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsList, struct {
 		Library   string                         `json:"library"`
 		After     string                         `json:"after"`
 		Limit     int                            `json:"limit"`
@@ -460,7 +489,7 @@ func (value *serviceClient) KnowledgeDocuments(ctx context.Context, library, aft
 }
 func (value *serviceClient) KnowledgeLibraries(ctx context.Context, after string, limit int, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibraryPage, error) {
 	var output agentsdk.KnowledgeLibraryPage
-	err := value.invoke(ctx, "service.libraries", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibrariesList, struct {
 		After     string                         `json:"after"`
 		Limit     int                            `json:"limit"`
 		Authority agentsdk.ConversationAuthority `json:"authority"`
@@ -469,7 +498,7 @@ func (value *serviceClient) KnowledgeLibraries(ctx context.Context, after string
 }
 func (value *serviceClient) KnowledgeLibrary(ctx context.Context, id string, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibrariesGet, struct {
 		ID        string                         `json:"id"`
 		Authority agentsdk.ConversationAuthority `json:"authority"`
 	}{id, authority}, &output)
@@ -477,7 +506,7 @@ func (value *serviceClient) KnowledgeLibrary(ctx context.Context, id string, aut
 }
 func (value *serviceClient) KnowledgeLibraryMembers(ctx context.Context, id, after string, limit int, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibraryMembers, error) {
 	var output agentsdk.KnowledgeLibraryMembers
-	err := value.invoke(ctx, "service.library_members", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibraryMembersList, struct {
 		ID        string                         `json:"id"`
 		After     string                         `json:"after"`
 		Limit     int                            `json:"limit"`
@@ -487,7 +516,7 @@ func (value *serviceClient) KnowledgeLibraryMembers(ctx context.Context, id, aft
 }
 func (value *serviceClient) KnowledgeLibrarySources(ctx context.Context, id, after string, limit int, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrarySources, error) {
 	var output agentsdk.KnowledgeLibrarySources
-	err := value.invoke(ctx, "service.library_sources", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionSourcesList, struct {
 		ID        string                         `json:"id"`
 		After     string                         `json:"after"`
 		Limit     int                            `json:"limit"`
@@ -524,7 +553,7 @@ func (value *serviceClient) LibraryResult(ctx context.Context, item agentsdk.Kno
 }
 func (value *serviceClient) RemoveKnowledgeLibraryMember(ctx context.Context, id, user string, revision int64, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library_member_remove", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibraryMembersRemove, struct {
 		ID        string                         `json:"id"`
 		User      string                         `json:"user"`
 		Revision  int64                          `json:"revision"`
@@ -534,7 +563,7 @@ func (value *serviceClient) RemoveKnowledgeLibraryMember(ctx context.Context, id
 }
 func (value *serviceClient) SetKnowledgeLibraryMember(ctx context.Context, id, user string, input agentsdk.KnowledgeLibraryMemberWrite, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library_member_set", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibraryMembersSet, struct {
 		ID        string                               `json:"id"`
 		User      string                               `json:"user"`
 		Input     agentsdk.KnowledgeLibraryMemberWrite `json:"input"`
@@ -544,7 +573,7 @@ func (value *serviceClient) SetKnowledgeLibraryMember(ctx context.Context, id, u
 }
 func (value *serviceClient) TransferKnowledgeDocument(ctx context.Context, library string, input agentsdk.KnowledgeDocumentTransfer, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
 	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_transfer", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionDocumentsTransfer, struct {
 		Library   string                             `json:"library"`
 		Input     agentsdk.KnowledgeDocumentTransfer `json:"input"`
 		Authority agentsdk.ConversationAuthority     `json:"authority"`
@@ -553,47 +582,55 @@ func (value *serviceClient) TransferKnowledgeDocument(ctx context.Context, libra
 }
 func (value *serviceClient) UpdateKnowledgeLibrary(ctx context.Context, id string, input agentsdk.KnowledgeLibraryUpdate, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeLibrary, error) {
 	var output agentsdk.KnowledgeLibrary
-	err := value.invoke(ctx, "service.library_update", struct {
+	err := value.invoke(ctx, knowledgesdk.ActionLibrariesUpdate, struct {
 		ID        string                          `json:"id"`
 		Input     agentsdk.KnowledgeLibraryUpdate `json:"input"`
 		Authority agentsdk.ConversationAuthority  `json:"authority"`
 	}{id, input, authority}, &output)
 	return output, err
 }
-func (value *serviceClient) UploadDocumentContent(ctx context.Context, library string, input agentsdk.KnowledgeDocumentUpload, origin *persistence.KnowledgeAttachmentOrigin, documentOrigin *persistence.KnowledgeDocumentOrigin, recheck func() error, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
-	if recheck != nil {
-		if err := recheck(); err != nil {
-			return agentsdk.KnowledgeDocument{}, err
-		}
-	}
-	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_upload_content", struct {
-		Library        string                                 `json:"library"`
-		Input          agentsdk.KnowledgeDocumentUpload       `json:"input"`
-		Origin         *persistence.KnowledgeAttachmentOrigin `json:"origin,omitempty"`
-		DocumentOrigin *persistence.KnowledgeDocumentOrigin   `json:"document_origin,omitempty"`
-		Authority      agentsdk.ConversationAuthority         `json:"authority"`
-	}{library, input, origin, documentOrigin, authority}, &output)
-	return output, err
-}
 func (value *serviceClient) UploadKnowledgeDocument(ctx context.Context, library string, input agentsdk.KnowledgeDocumentUpload, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
-	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_upload", struct {
-		Library   string                           `json:"library"`
-		Input     agentsdk.KnowledgeDocumentUpload `json:"input"`
-		Authority agentsdk.ConversationAuthority   `json:"authority"`
-	}{library, input, authority}, &output)
+	return value.uploadKnowledgeDocument(ctx, knowledgecontract.SaaSDocumentUploadRequest{
+		Operation: knowledgecontract.SaaSDocumentUploadOperation,
+		Library:   library,
+		Input:     input,
+		Authority: authority,
+	})
+}
+
+func (value *serviceClient) UploadKnowledgeDocumentChunk(ctx context.Context, library string, input agentsdk.KnowledgeDocumentUploadChunk, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocumentUploadProgress, error) {
+	request := knowledgecontract.SaaSDocumentChunkUploadRequest{
+		Operation: knowledgecontract.SaaSDocumentUploadChunkOperation,
+		Library:   library, Input: input, Authority: authority,
+	}
+	var output agentsdk.KnowledgeDocumentUploadProgress
+	grants, err := value.client.invokeWithGrants(ctx, knowledgecontract.SaaSDocumentUploadPrepareOperation, request, nil, value.options)
+	if err != nil {
+		return output, err
+	}
+	request.Grants = grants
+	err = value.client.uploadStream(ctx, knowledgecontract.SaaSDocumentUploadPath, request, request.Input.Content, request.Input.ChunkBytes, &output)
 	return output, err
 }
 
 func (value *serviceClient) UploadKnowledgeDocumentForSource(ctx context.Context, library string, input agentsdk.KnowledgeDocumentUpload, source agentsdk.KnowledgeDocumentSourceAccess, authority agentsdk.ConversationAuthority) (agentsdk.KnowledgeDocument, error) {
+	return value.uploadKnowledgeDocument(ctx, knowledgecontract.SaaSDocumentUploadRequest{
+		Operation: knowledgecontract.SaaSDocumentUploadSourceOperation,
+		Library:   library,
+		Input:     input,
+		Source:    &source,
+		Authority: authority,
+	})
+}
+
+func (value *serviceClient) uploadKnowledgeDocument(ctx context.Context, request knowledgecontract.SaaSDocumentUploadRequest) (agentsdk.KnowledgeDocument, error) {
 	var output agentsdk.KnowledgeDocument
-	err := value.invoke(ctx, "service.document_upload_source", struct {
-		Library   string                                 `json:"library"`
-		Input     agentsdk.KnowledgeDocumentUpload       `json:"input"`
-		Source    agentsdk.KnowledgeDocumentSourceAccess `json:"source"`
-		Authority agentsdk.ConversationAuthority         `json:"authority"`
-	}{library, input, source, authority}, &output)
+	grants, err := value.client.invokeWithGrants(ctx, knowledgecontract.SaaSDocumentUploadPrepareOperation, request, nil, value.options)
+	if err != nil {
+		return output, err
+	}
+	request.Grants = grants
+	err = value.client.uploadStream(ctx, knowledgecontract.SaaSDocumentUploadPath, request, request.Input.Content, request.Input.Bytes, &output)
 	return output, err
 }
 
@@ -699,6 +736,24 @@ func (v documentRepository) RequestKnowledgeDocumentDeletion(c context.Context, 
 	}{id, r, a}, &o)
 	return o, e
 }
+func (v documentRepository) RequestKnowledgeDocumentRetry(c context.Context, id string, r int64, a agentsdk.ConversationAuthority) (persistence.KnowledgeDocumentRecord, error) {
+	var o persistence.KnowledgeDocumentRecord
+	e := v.client.invoke(c, "documents.request_retry", struct {
+		ID        string                         `json:"id"`
+		Revision  int64                          `json:"revision"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{id, r, a}, &o)
+	return o, e
+}
+func (v documentRepository) RequestKnowledgeDocumentReindex(c context.Context, id string, r int64, a agentsdk.ConversationAuthority) (persistence.KnowledgeDocumentRecord, error) {
+	var o persistence.KnowledgeDocumentRecord
+	e := v.client.invoke(c, "documents.request_reindex", struct {
+		ID        string                         `json:"id"`
+		Revision  int64                          `json:"revision"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{id, r, a}, &o)
+	return o, e
+}
 func (v documentRepository) ClaimKnowledgeDocumentWork(c context.Context, owner, scope string, now time.Time, d time.Duration) (persistence.KnowledgeDocumentLease, bool, error) {
 	var o struct {
 		Lease   persistence.KnowledgeDocumentLease `json:"lease"`
@@ -723,6 +778,30 @@ func (v documentRepository) StartKnowledgeDocumentPut(c context.Context, l persi
 		Started bool                                `json:"started"`
 	}
 	e := v.client.invoke(c, "documents.start_put", l, &o)
+	return o.Record, o.Started, e
+}
+func (v documentRepository) StartKnowledgeDocumentReindexPut(c context.Context, l persistence.KnowledgeDocumentLease) (persistence.KnowledgeDocumentRecord, bool, error) {
+	var o struct {
+		Record  persistence.KnowledgeDocumentRecord `json:"record"`
+		Started bool                                `json:"started"`
+	}
+	e := v.client.invoke(c, "documents.start_reindex_put", l, &o)
+	return o.Record, o.Started, e
+}
+func (v documentRepository) StartKnowledgeDocumentRetiredDelete(c context.Context, l persistence.KnowledgeDocumentLease) (persistence.KnowledgeDocumentRecord, bool, error) {
+	var o struct {
+		Record  persistence.KnowledgeDocumentRecord `json:"record"`
+		Started bool                                `json:"started"`
+	}
+	e := v.client.invoke(c, "documents.start_retired_delete", l, &o)
+	return o.Record, o.Started, e
+}
+func (v documentRepository) StartKnowledgeDocumentScan(c context.Context, l persistence.KnowledgeDocumentLease) (persistence.KnowledgeDocumentRecord, bool, error) {
+	var o struct {
+		Record  persistence.KnowledgeDocumentRecord `json:"record"`
+		Started bool                                `json:"started"`
+	}
+	e := v.client.invoke(c, "documents.start_scan", l, &o)
 	return o.Record, o.Started, e
 }
 func (v documentRepository) StartKnowledgeDocumentDelete(c context.Context, l persistence.KnowledgeDocumentLease) error {
@@ -786,6 +865,363 @@ func (value artifactRepository) RecordArtifactDownload(ctx context.Context, id s
 		ID        string                         `json:"id"`
 		Authority agentsdk.ConversationAuthority `json:"authority"`
 	}{id, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePages(ctx context.Context, libraryID, parentID, after string, limit int, includeArchived bool, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePagePage, error) {
+	var output knowledgesdk.KnowledgePagePage
+	err := value.invoke(ctx, knowledgesdk.ActionPagesList, struct {
+		LibraryID       string                         `json:"library_id"`
+		ParentID        string                         `json:"parent_id"`
+		After           string                         `json:"after"`
+		Limit           int                            `json:"limit"`
+		IncludeArchived bool                           `json:"include_archived"`
+		Authority       agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, parentID, after, limit, includeArchived, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePage(ctx context.Context, libraryID, pageID string, includeDraft bool, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPagesGet, struct {
+		LibraryID    string                         `json:"library_id"`
+		PageID       string                         `json:"page_id"`
+		IncludeDraft bool                           `json:"include_draft"`
+		Authority    agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, includeDraft, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) CreateKnowledgePage(ctx context.Context, libraryID string, input knowledgesdk.KnowledgePageCreate, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPagesCreate, struct {
+		LibraryID string                           `json:"library_id"`
+		Input     knowledgesdk.KnowledgePageCreate `json:"input"`
+		Authority agentsdk.ConversationAuthority   `json:"authority"`
+	}{libraryID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SaveKnowledgePageDraft(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageDraftWrite, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPagesUpdate, struct {
+		LibraryID string                               `json:"library_id"`
+		PageID    string                               `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageDraftWrite `json:"input"`
+		Authority agentsdk.ConversationAuthority       `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) MoveKnowledgePage(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageMove, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePage, error) {
+	var output knowledgesdk.KnowledgePage
+	err := value.invoke(ctx, knowledgesdk.ActionPagesMove, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageMove `json:"input"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) PreviewKnowledgePageMove(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageMovePreview, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageMoveImpact, error) {
+	var output knowledgesdk.KnowledgePageMoveImpact
+	err := value.invoke(ctx, knowledgesdk.ActionPagesMovePreview, struct {
+		LibraryID string                                `json:"library_id"`
+		PageID    string                                `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageMovePreview `json:"input"`
+		Authority agentsdk.ConversationAuthority        `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) ReorderKnowledgePages(ctx context.Context, libraryID string, input knowledgesdk.KnowledgePageReorder, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePagePage, error) {
+	var output knowledgesdk.KnowledgePagePage
+	err := value.invoke(ctx, knowledgesdk.ActionPagesReorder, struct {
+		LibraryID string                            `json:"library_id"`
+		Input     knowledgesdk.KnowledgePageReorder `json:"input"`
+		Authority agentsdk.ConversationAuthority    `json:"authority"`
+	}{libraryID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) CopyKnowledgePage(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageCopy, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPagesCopy, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageCopy `json:"input"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SetKnowledgePageArchived(ctx context.Context, libraryID, pageID string, archived bool, input knowledgesdk.KnowledgePageStateWrite, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePage, error) {
+	action := knowledgesdk.ActionPagesArchive
+	if !archived {
+		action = knowledgesdk.ActionPagesRestore
+	}
+	var output knowledgesdk.KnowledgePage
+	err := value.invoke(ctx, action, struct {
+		LibraryID string                               `json:"library_id"`
+		PageID    string                               `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageStateWrite `json:"input"`
+		Authority agentsdk.ConversationAuthority       `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) PublishKnowledgePage(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePagePublish, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPagesPublish, struct {
+		LibraryID string                            `json:"library_id"`
+		PageID    string                            `json:"page_id"`
+		Input     knowledgesdk.KnowledgePagePublish `json:"input"`
+		Authority agentsdk.ConversationAuthority    `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePageVersions(ctx context.Context, libraryID, pageID string, before int64, limit int, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageVersionPage, error) {
+	var output knowledgesdk.KnowledgePageVersionPage
+	err := value.invoke(ctx, knowledgesdk.ActionPageVersionsList, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Before    int64                          `json:"before"`
+		Limit     int                            `json:"limit"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, before, limit, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePageVersion(ctx context.Context, libraryID, pageID string, version int64, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageVersion, error) {
+	var output knowledgesdk.KnowledgePageVersion
+	err := value.invoke(ctx, knowledgesdk.ActionPageVersionsGet, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Version   int64                          `json:"version"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, version, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) DiffKnowledgePageVersions(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageVersionDiffInput, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageVersionDiff, error) {
+	var output knowledgesdk.KnowledgePageVersionDiff
+	err := value.invoke(ctx, knowledgesdk.ActionPageVersionsDiff, struct {
+		LibraryID string                                     `json:"library_id"`
+		PageID    string                                     `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageVersionDiffInput `json:"input"`
+		Authority agentsdk.ConversationAuthority             `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) RestoreKnowledgePageVersion(ctx context.Context, libraryID, pageID string, version int64, input knowledgesdk.KnowledgePageRestoreVersion, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPageVersionsRestore, struct {
+		LibraryID string                                   `json:"library_id"`
+		PageID    string                                   `json:"page_id"`
+		Version   int64                                    `json:"version"`
+		Input     knowledgesdk.KnowledgePageRestoreVersion `json:"input"`
+		Authority agentsdk.ConversationAuthority           `json:"authority"`
+	}{libraryID, pageID, version, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePageComments(ctx context.Context, libraryID, pageID, after string, limit int, unresolvedOnly bool, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageCommentPage, error) {
+	var output knowledgesdk.KnowledgePageCommentPage
+	err := value.invoke(ctx, knowledgesdk.ActionPageCommentsList, struct {
+		LibraryID      string                         `json:"library_id"`
+		PageID         string                         `json:"page_id"`
+		After          string                         `json:"after"`
+		Limit          int                            `json:"limit"`
+		UnresolvedOnly bool                           `json:"unresolved_only"`
+		Authority      agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, after, limit, unresolvedOnly, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) CreateKnowledgePageComment(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageCommentCreate, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageComment, error) {
+	var output knowledgesdk.KnowledgePageComment
+	err := value.invoke(ctx, knowledgesdk.ActionPageCommentsCreate, struct {
+		LibraryID string                                  `json:"library_id"`
+		PageID    string                                  `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageCommentCreate `json:"input"`
+		Authority agentsdk.ConversationAuthority          `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) UpdateKnowledgePageComment(ctx context.Context, libraryID, pageID, commentID string, input knowledgesdk.KnowledgePageCommentUpdate, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageComment, error) {
+	var output knowledgesdk.KnowledgePageComment
+	err := value.invoke(ctx, knowledgesdk.ActionPageCommentsUpdate, struct {
+		LibraryID string                                  `json:"library_id"`
+		PageID    string                                  `json:"page_id"`
+		CommentID string                                  `json:"comment_id"`
+		Input     knowledgesdk.KnowledgePageCommentUpdate `json:"input"`
+		Authority agentsdk.ConversationAuthority          `json:"authority"`
+	}{libraryID, pageID, commentID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) ResolveKnowledgePageComment(ctx context.Context, libraryID, pageID, commentID string, input knowledgesdk.KnowledgePageCommentResolve, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageComment, error) {
+	var output knowledgesdk.KnowledgePageComment
+	err := value.invoke(ctx, knowledgesdk.ActionPageCommentsResolve, struct {
+		LibraryID string                                   `json:"library_id"`
+		PageID    string                                   `json:"page_id"`
+		CommentID string                                   `json:"comment_id"`
+		Input     knowledgesdk.KnowledgePageCommentResolve `json:"input"`
+		Authority agentsdk.ConversationAuthority           `json:"authority"`
+	}{libraryID, pageID, commentID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) DeleteKnowledgePageComment(ctx context.Context, libraryID, pageID, commentID string, input knowledgesdk.KnowledgePageCommentDelete, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageComment, error) {
+	var output knowledgesdk.KnowledgePageComment
+	err := value.invoke(ctx, knowledgesdk.ActionPageCommentsDelete, struct {
+		LibraryID string                                  `json:"library_id"`
+		PageID    string                                  `json:"page_id"`
+		CommentID string                                  `json:"comment_id"`
+		Input     knowledgesdk.KnowledgePageCommentDelete `json:"input"`
+		Authority agentsdk.ConversationAuthority          `json:"authority"`
+	}{libraryID, pageID, commentID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePageAttachments(ctx context.Context, libraryID, pageID string, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageAttachmentPage, error) {
+	var output knowledgesdk.KnowledgePageAttachmentPage
+	err := value.invoke(ctx, knowledgesdk.ActionPageAttachmentsList, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SetKnowledgePageAttachment(ctx context.Context, libraryID, pageID, documentID string, input knowledgesdk.KnowledgePageAttachmentWrite, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageAttachment, error) {
+	var output knowledgesdk.KnowledgePageAttachment
+	err := value.invoke(ctx, knowledgesdk.ActionPageAttachmentsSet, struct {
+		LibraryID  string                                    `json:"library_id"`
+		PageID     string                                    `json:"page_id"`
+		DocumentID string                                    `json:"document_id"`
+		Input      knowledgesdk.KnowledgePageAttachmentWrite `json:"input"`
+		Authority  agentsdk.ConversationAuthority            `json:"authority"`
+	}{libraryID, pageID, documentID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) RemoveKnowledgePageAttachment(ctx context.Context, libraryID, pageID, documentID string, input knowledgesdk.KnowledgePageAttachmentRemove, authority agentsdk.ConversationAuthority) error {
+	return value.invoke(ctx, knowledgesdk.ActionPageAttachmentsRemove, struct {
+		LibraryID  string                                     `json:"library_id"`
+		PageID     string                                     `json:"page_id"`
+		DocumentID string                                     `json:"document_id"`
+		Input      knowledgesdk.KnowledgePageAttachmentRemove `json:"input"`
+		Authority  agentsdk.ConversationAuthority             `json:"authority"`
+	}{libraryID, pageID, documentID, input, authority}, nil)
+}
+
+func (value *serviceClient) SearchKnowledgePrincipals(ctx context.Context, query, after string, limit int, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePrincipalPage, error) {
+	var output knowledgesdk.KnowledgePrincipalPage
+	err := value.invoke(ctx, knowledgesdk.ActionPrincipalsSearch, struct {
+		Query     string                         `json:"query"`
+		After     string                         `json:"after"`
+		Limit     int                            `json:"limit"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{query, after, limit, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) ResolveKnowledgePrincipals(ctx context.Context, userIDs []string, authority agentsdk.ConversationAuthority) ([]knowledgesdk.KnowledgePrincipal, error) {
+	var output []knowledgesdk.KnowledgePrincipal
+	err := value.invoke(ctx, knowledgesdk.ActionPrincipalsResolve, struct {
+		UserIDs   []string                       `json:"user_ids"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{userIDs, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SearchKnowledgeLibraryMembers(ctx context.Context, libraryID, query, after string, limit int, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePrincipalPage, error) {
+	var output knowledgesdk.KnowledgePrincipalPage
+	err := value.invoke(ctx, knowledgesdk.ActionLibraryMembersSearch, struct {
+		LibraryID string                         `json:"library_id"`
+		Query     string                         `json:"query"`
+		After     string                         `json:"after"`
+		Limit     int                            `json:"limit"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, query, after, limit, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) ExplainKnowledgeAccess(ctx context.Context, libraryID string, input knowledgesdk.KnowledgeAccessExplainRequest, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgeAccessExplanation, error) {
+	var output knowledgesdk.KnowledgeAccessExplanation
+	err := value.invoke(ctx, knowledgesdk.ActionAccessExplain, struct {
+		LibraryID string                                     `json:"library_id"`
+		Input     knowledgesdk.KnowledgeAccessExplainRequest `json:"input"`
+		Authority agentsdk.ConversationAuthority             `json:"authority"`
+	}{libraryID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) KnowledgePageAccess(ctx context.Context, libraryID, pageID string, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageAccessPolicy, error) {
+	var output knowledgesdk.KnowledgePageAccessPolicy
+	err := value.invoke(ctx, knowledgesdk.ActionPageAccessGet, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SetKnowledgePageAccess(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgePageAccessWrite, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageAccessPolicy, error) {
+	var output knowledgesdk.KnowledgePageAccessPolicy
+	err := value.invoke(ctx, knowledgesdk.ActionPageAccessSet, struct {
+		LibraryID string                                `json:"library_id"`
+		PageID    string                                `json:"page_id"`
+		Input     knowledgesdk.KnowledgePageAccessWrite `json:"input"`
+		Authority agentsdk.ConversationAuthority        `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) ConnectKnowledgeCollaboration(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgeCollaborationConnect, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgeCollaborationSession, error) {
+	var output knowledgesdk.KnowledgeCollaborationSession
+	err := value.invoke(ctx, knowledgesdk.ActionPageCollaborationConnect, struct {
+		LibraryID string                                     `json:"library_id"`
+		PageID    string                                     `json:"page_id"`
+		Input     knowledgesdk.KnowledgeCollaborationConnect `json:"input"`
+		Authority agentsdk.ConversationAuthority             `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) SyncKnowledgeCollaboration(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgeCollaborationSync, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgeCollaborationSyncResult, error) {
+	var output knowledgesdk.KnowledgeCollaborationSyncResult
+	err := value.invoke(ctx, knowledgesdk.ActionPageCollaborationSync, struct {
+		LibraryID string                                  `json:"library_id"`
+		PageID    string                                  `json:"page_id"`
+		Input     knowledgesdk.KnowledgeCollaborationSync `json:"input"`
+		Authority agentsdk.ConversationAuthority          `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
+func (value *serviceClient) CloseKnowledgeCollaboration(ctx context.Context, libraryID, pageID, sessionID string, authority agentsdk.ConversationAuthority) error {
+	return value.invoke(ctx, knowledgesdk.ActionPageCollaborationClose, struct {
+		LibraryID string                         `json:"library_id"`
+		PageID    string                         `json:"page_id"`
+		SessionID string                         `json:"session_id"`
+		Authority agentsdk.ConversationAuthority `json:"authority"`
+	}{libraryID, pageID, sessionID, authority}, nil)
+}
+
+func (value *serviceClient) PublishKnowledgeCollaboration(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgeCollaborationPublish, authority agentsdk.ConversationAuthority) (knowledgesdk.KnowledgePageView, error) {
+	var output knowledgesdk.KnowledgePageView
+	err := value.invoke(ctx, knowledgesdk.ActionPageCollaborationPublish, struct {
+		LibraryID string                                     `json:"library_id"`
+		PageID    string                                     `json:"page_id"`
+		Input     knowledgesdk.KnowledgeCollaborationPublish `json:"input"`
+		Authority agentsdk.ConversationAuthority             `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
 	return output, err
 }
 

@@ -2,12 +2,60 @@ package contract
 
 import (
 	"encoding/json"
+
+	agentsdk "github.com/domainry/domainry-agent-sdk"
 )
 
 const (
-	SaaSDiscoveryPath = "/knowledge/v1/discovery"
-	SaaSInvokePath    = "/knowledge/v1/invoke"
+	SaaSDiscoveryPath         = "/knowledge/v1/discovery"
+	SaaSInvokePath            = "/knowledge/v1/invoke"
+	SaaSDocumentUploadPath    = "/knowledge/v1/documents/upload"
+	SaaSDocumentDownloadPath  = "/knowledge/v1/documents/download"
+	SaaSSourceDocumentPutPath = "/knowledge/v1/sources/documents"
+
+	SaaSDocumentUploadPrepareOperation   = "service.document_upload_prepare"
+	SaaSDocumentDownloadPrepareOperation = "service.document_download_prepare"
+
+	SaaSDocumentUploadOperation       = "service.document_upload"
+	SaaSDocumentUploadChunkOperation  = "service.document_upload_chunk"
+	SaaSDocumentUploadSourceOperation = "service.document_upload_source"
+	SaaSTransferHeader                = "X-Domainry-Knowledge-Transfer"
 )
+
+// SaaSDocumentUploadRequest is the bounded metadata part that accompanies a
+// streamed multipart document body. Content is deliberately excluded from the
+// JSON contract by KnowledgeDocumentUpload.
+type SaaSDocumentUploadRequest struct {
+	Operation string                                  `json:"operation"`
+	Library   string                                  `json:"library"`
+	Input     agentsdk.KnowledgeDocumentUpload        `json:"input"`
+	Source    *agentsdk.KnowledgeDocumentSourceAccess `json:"source,omitempty"`
+	Authority agentsdk.ConversationAuthority          `json:"authority"`
+	Grants    []SaaSGrant                             `json:"grants,omitempty"`
+}
+
+type SaaSDocumentChunkUploadRequest struct {
+	Operation string                                `json:"operation"`
+	Library   string                                `json:"library"`
+	Input     agentsdk.KnowledgeDocumentUploadChunk `json:"input"`
+	Authority agentsdk.ConversationAuthority        `json:"authority"`
+	Grants    []SaaSGrant                           `json:"grants,omitempty"`
+}
+
+// SaaSDocumentDownloadRequest is encoded into a bounded private request header
+// so the download remains a standard GET with Range support.
+type SaaSDocumentDownloadRequest struct {
+	Library   string                         `json:"library"`
+	ID        string                         `json:"id"`
+	Authority agentsdk.ConversationAuthority `json:"authority"`
+	Grants    []SaaSGrant                    `json:"grants,omitempty"`
+}
+
+type SaaSSourceDocumentPutRequest struct {
+	Handle    string                            `json:"handle"`
+	Input     agentsdk.KnowledgeDocumentContent `json:"input"`
+	Authority agentsdk.ConversationAuthority    `json:"authority"`
+}
 
 // SaaSRequest is the bounded transport envelope used by the official remote
 // client. Operation names are owned by this SDK; Input never contains a Store,
@@ -28,10 +76,11 @@ type SaaSResponse struct {
 }
 
 type SaaSError struct {
-	Class     string `json:"class"`
-	Code      string `json:"code"`
-	Message   string `json:"message,omitempty"`
-	Retryable bool   `json:"retryable,omitempty"`
+	Class     string          `json:"class"`
+	Code      string          `json:"code"`
+	Message   string          `json:"message,omitempty"`
+	Retryable bool            `json:"retryable,omitempty"`
+	Details   json.RawMessage `json:"details,omitempty"`
 }
 
 type SaaSChallenge struct {
