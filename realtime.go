@@ -79,6 +79,46 @@ type KnowledgeCollaborationSyncResult struct {
 	Complete bool                                `json:"complete"`
 }
 
+type KnowledgeCollaborationEventType string
+
+const (
+	KnowledgeCollaborationEventUpdate    KnowledgeCollaborationEventType = "update"
+	KnowledgeCollaborationEventSnapshot  KnowledgeCollaborationEventType = "snapshot"
+	KnowledgeCollaborationEventPresence  KnowledgeCollaborationEventType = "presence"
+	KnowledgeCollaborationEventRevoked   KnowledgeCollaborationEventType = "revoked"
+	KnowledgeCollaborationEventHeartbeat KnowledgeCollaborationEventType = "heartbeat"
+)
+
+// KnowledgeCollaborationServerEvent is the resumable server-to-client event
+// contract. Clock is the durable page clock used as the SSE id. Presence does
+// not advance that clock and is therefore delivered alongside the current id.
+type KnowledgeCollaborationServerEvent struct {
+	Type     KnowledgeCollaborationEventType  `json:"type"`
+	Clock    int64                            `json:"clock"`
+	UserID   string                           `json:"user_id,omitempty"`
+	Update   *KnowledgeCollaborationUpdate    `json:"update,omitempty"`
+	Snapshot *KnowledgeCollaborationSnapshot  `json:"snapshot,omitempty"`
+	Presence []KnowledgeCollaborationPresence `json:"presence,omitempty"`
+	Code     string                           `json:"code,omitempty"`
+}
+
+// KnowledgeCollaborationEvents asks for events after one durable clock. The
+// bounded wait keeps the Service usable through both embedded and SaaS
+// transports; the public HTTP adapter turns successive batches into one SSE
+// stream. WaitMillis is capped by the implementation.
+type KnowledgeCollaborationEvents struct {
+	SessionID  string `json:"session_id"`
+	AfterClock int64  `json:"after_clock"`
+	WaitMillis int64  `json:"wait_millis,omitempty"`
+}
+
+type KnowledgeCollaborationEventBatch struct {
+	SessionID   string                              `json:"session_id"`
+	ServerClock int64                               `json:"server_clock"`
+	Events      []KnowledgeCollaborationServerEvent `json:"events"`
+	Complete    bool                                `json:"complete"`
+}
+
 type KnowledgeCollaborationPublish struct {
 	SessionID   string `json:"session_id"`
 	ClientID    string `json:"client_id"`
@@ -88,6 +128,7 @@ type KnowledgeCollaborationPublish struct {
 type KnowledgeRealtimeCollaborationService interface {
 	ConnectKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationConnect, Authority) (KnowledgeCollaborationSession, error)
 	SyncKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationSync, Authority) (KnowledgeCollaborationSyncResult, error)
+	KnowledgeCollaborationEvents(context.Context, string, string, KnowledgeCollaborationEvents, Authority) (KnowledgeCollaborationEventBatch, error)
 	CloseKnowledgeCollaboration(context.Context, string, string, string, Authority) error
 	PublishKnowledgeCollaboration(context.Context, string, string, KnowledgeCollaborationPublish, Authority) (KnowledgePageView, error)
 }

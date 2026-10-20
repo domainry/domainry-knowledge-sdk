@@ -39,6 +39,7 @@ const (
 
 	ActionPageCollaborationConnect = "knowledge.page_collaboration.connect"
 	ActionPageCollaborationSync    = "knowledge.page_collaboration.sync"
+	ActionPageCollaborationEvents  = "knowledge.page_collaboration.events"
 	ActionPageCollaborationClose   = "knowledge.page_collaboration.close"
 	ActionPageCollaborationPublish = "knowledge.page_collaboration.publish"
 
@@ -113,6 +114,7 @@ func AuthorizationActions() ([]actioncontract.ActionDefinition, error) {
 		{ActionPageAccessSet, "knowledge.page_access", "Knowledge page access", "PUT", "/knowledge/libraries/{libraryID}/pages/{pageID}/access", "Set knowledge page access policy", actioncontract.EffectWrite, actioncontract.RiskHigh},
 		{ActionPageCollaborationConnect, "knowledge.page_collaboration", "Knowledge page collaboration", "POST", "/knowledge/libraries/{libraryID}/pages/{pageID}/collaboration/connect", "Connect knowledge page collaboration", actioncontract.EffectWrite, actioncontract.RiskMedium},
 		{ActionPageCollaborationSync, "knowledge.page_collaboration", "Knowledge page collaboration", "POST", "/knowledge/libraries/{libraryID}/pages/{pageID}/collaboration/sync", "Synchronize knowledge page collaboration", actioncontract.EffectWrite, actioncontract.RiskMedium},
+		{ActionPageCollaborationEvents, "knowledge.page_collaboration", "Knowledge page collaboration", "GET", "/knowledge/libraries/{libraryID}/pages/{pageID}/collaboration/{sessionID}/events", "Stream knowledge page collaboration events", actioncontract.EffectRead, actioncontract.RiskLow},
 		{ActionPageCollaborationClose, "knowledge.page_collaboration", "Knowledge page collaboration", "DELETE", "/knowledge/libraries/{libraryID}/pages/{pageID}/collaboration/{sessionID}", "Close knowledge page collaboration", actioncontract.EffectWrite, actioncontract.RiskLow},
 		{ActionPageCollaborationPublish, "knowledge.page_collaboration", "Knowledge page collaboration", "POST", "/knowledge/libraries/{libraryID}/pages/{pageID}/collaboration/publish", "Publish knowledge collaboration snapshot", actioncontract.EffectWrite, actioncontract.RiskHigh},
 		{ActionPageVersionsList, "knowledge.page_versions", "Knowledge page versions", "GET", "/knowledge/libraries/{libraryID}/pages/{pageID}/versions", "List knowledge page versions", actioncontract.EffectRead, actioncontract.RiskLow},

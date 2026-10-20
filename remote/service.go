@@ -820,6 +820,17 @@ func (value *serviceClient) SyncKnowledgeCollaboration(ctx context.Context, libr
 	return output, err
 }
 
+func (value *serviceClient) KnowledgeCollaborationEvents(ctx context.Context, libraryID, pageID string, input knowledgesdk.KnowledgeCollaborationEvents, authority knowledgesdk.Authority) (knowledgesdk.KnowledgeCollaborationEventBatch, error) {
+	var output knowledgesdk.KnowledgeCollaborationEventBatch
+	err := value.invoke(ctx, knowledgesdk.ActionPageCollaborationEvents, struct {
+		LibraryID string                                    `json:"library_id"`
+		PageID    string                                    `json:"page_id"`
+		Input     knowledgesdk.KnowledgeCollaborationEvents `json:"input"`
+		Authority knowledgesdk.Authority                    `json:"authority"`
+	}{libraryID, pageID, input, authority}, &output)
+	return output, err
+}
+
 func (value *serviceClient) CloseKnowledgeCollaboration(ctx context.Context, libraryID, pageID, sessionID string, authority knowledgesdk.Authority) error {
 	return value.invoke(ctx, knowledgesdk.ActionPageCollaborationClose, struct {
 		LibraryID string                 `json:"library_id"`
