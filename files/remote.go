@@ -209,9 +209,12 @@ func (client *remoteClient) request(ctx context.Context, method, requestPath str
 		return &Error{Class: "unavailable", Code: "knowledge.response_too_large"}
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		var payload remoteResponse
-		if json.Unmarshal(raw, &payload) == nil && payload.Error != nil {
-			return &Error{Class: payload.Error.Class, Code: payload.Error.Code, Message: payload.Error.Message, Retryable: payload.Error.Retryable}
+		var payload struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(raw, &payload) == nil && strings.TrimSpace(payload.Code) != "" {
+			return &Error{Class: statusClass(response.StatusCode), Code: payload.Code, Message: payload.Message, Retryable: response.StatusCode >= 500}
 		}
 		return &Error{Class: "unavailable", Code: "knowledge.remote_request_failed", Retryable: response.StatusCode >= 500}
 	}
@@ -224,6 +227,21 @@ func (client *remoteClient) request(ctx context.Context, method, requestPath str
 		return &Error{Class: "unavailable", Code: "knowledge.response_invalid", Cause: err}
 	}
 	return nil
+}
+
+func statusClass(status int) string {
+	switch status {
+	case http.StatusBadRequest, http.StatusRequestEntityTooLarge:
+		return "bad_request"
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return "forbidden"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusConflict:
+		return "conflict"
+	default:
+		return "unavailable"
+	}
 }
 
 var _ Service = (*remoteClient)(nil)

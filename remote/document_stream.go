@@ -125,15 +125,22 @@ func decodeStreamResponse(response *http.Response, limit int64, output any) erro
 	if int64(len(raw)) > limit {
 		return remoteError("unavailable", "knowledge.response_too_large", false, nil)
 	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		var failure struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(raw, &failure) == nil && strings.TrimSpace(failure.Code) != "" {
+			return &knowledgesdk.Error{Class: statusClass(response.StatusCode), Code: safeCode(failure.Code), Message: safeMessage(failure.Message), Retryable: response.StatusCode >= 500}
+		}
+		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
+	}
 	var envelope knowledgecontract.SaaSResponse
 	if json.Unmarshal(raw, &envelope) != nil {
-		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
+		return remoteError("unavailable", "knowledge.response_invalid", false, nil)
 	}
 	if envelope.Error != nil {
 		return &knowledgesdk.Error{Class: safeClass(envelope.Error.Class), Code: safeCode(envelope.Error.Code), Message: safeMessage(envelope.Error.Message), Retryable: envelope.Error.Retryable}
-	}
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
 	}
 	if output == nil {
 		return nil
