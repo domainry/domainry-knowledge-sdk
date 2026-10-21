@@ -8,7 +8,7 @@ import (
 
 func TestErrorClassificationContract(t *testing.T) {
 	tests := []struct {
-		class string
+		class ErrorClass
 		kind  apperror.ErrorKind
 		code  string
 	}{

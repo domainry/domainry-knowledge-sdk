@@ -131,7 +131,7 @@ func decodeStreamResponse(response *http.Response, limit int64, output any) erro
 			Message string `json:"message"`
 		}
 		if json.Unmarshal(raw, &failure) == nil && strings.TrimSpace(failure.Code) != "" {
-			return &knowledgesdk.Error{Class: statusClass(response.StatusCode), Code: safeCode(failure.Code), Message: safeMessage(failure.Message), Retryable: response.StatusCode >= 500}
+			return &knowledgesdk.Error{Class: statusClass(response.StatusCode), Code: safeCode(failure.Code), Message: safeMessage(failure.Message), Retryable: response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500}
 		}
 		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
 	}

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/domainry/domainry-foundation/apperror"
 )
 
 const MaxContentBytes int64 = 25 << 20
@@ -58,8 +60,20 @@ type Service interface {
 	Delete(context.Context, Authority, string) error
 }
 
+type ErrorClass = apperror.ErrorKind
+
+const (
+	ErrorClassBadRequest  = apperror.KindBadRequest
+	ErrorClassForbidden   = apperror.KindForbidden
+	ErrorClassNotFound    = apperror.KindNotFound
+	ErrorClassConflict    = apperror.KindConflict
+	ErrorClassRateLimited = apperror.KindRateLimited
+	ErrorClassUnavailable = apperror.KindUnavailable
+	ErrorClassInternal    = apperror.KindInternal
+)
+
 type Error struct {
-	Class     string
+	Class     ErrorClass
 	Code      string
 	Message   string
 	Retryable bool
@@ -94,25 +108,10 @@ func (value *Error) ApplicationErrorKind() string {
 	if value == nil {
 		return ""
 	}
-	switch strings.ToLower(strings.TrimSpace(value.Class)) {
-	case "bad_request", "invalid":
-		return "bad_request"
-	case "forbidden", "unauthenticated", "unauthorized":
-		return "forbidden"
-	case "not_found":
-		return "not_found"
-	case "conflict":
-		return "conflict"
-	case "rate_limited":
-		return "rate_limited"
-	case "unavailable":
-		return "unavailable"
-	default:
-		if value.Retryable {
-			return "unavailable"
-		}
-		return "internal"
+	if value.Class == "" && value.Retryable {
+		return string(apperror.KindUnavailable)
 	}
+	return string(apperror.NormalizeKind(string(value.Class)))
 }
 
 func (value *Error) ErrorCode() string {

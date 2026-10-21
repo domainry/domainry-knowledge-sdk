@@ -88,7 +88,7 @@ func (c *client) request(ctx context.Context, method, path string, input any, ou
 			Message string `json:"message"`
 		}
 		if json.Unmarshal(raw, &payload) == nil && strings.TrimSpace(payload.Code) != "" {
-			return &knowledgesdk.Error{Class: statusClass(response.StatusCode), Code: safeCode(payload.Code), Message: safeMessage(payload.Message), Retryable: response.StatusCode >= 500}
+			return &knowledgesdk.Error{Class: statusClass(response.StatusCode), Code: safeCode(payload.Code), Message: safeMessage(payload.Message), Retryable: response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500}
 		}
 		return remoteError(statusClass(response.StatusCode), "knowledge.remote_request_failed", response.StatusCode >= 500, nil)
 	}
@@ -200,7 +200,7 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 	return knowledgecontract.SaaSGrant{Token: challenge.Token, Result: raw}, nil
 }
 
-func remoteError(class, code string, retryable bool, cause error) error {
+func remoteError(class knowledgesdk.ErrorClass, code string, retryable bool, cause error) error {
 	return &knowledgesdk.Error{Class: class, Code: code, Retryable: retryable, Cause: cause}
 }
 
@@ -209,7 +209,7 @@ func decodeRemoteError(input *knowledgecontract.SaaSError) error {
 		return remoteError("unavailable", "knowledge.remote_request_failed", false, nil)
 	}
 	classified := &knowledgesdk.Error{Class: safeClass(input.Class), Code: safeCode(input.Code), Message: safeMessage(input.Message), Retryable: input.Retryable}
-	if classified.Class == "conflict" && len(input.Details) != 0 {
+	if classified.Class == knowledgesdk.ErrorClassConflict && len(input.Details) != 0 {
 		var conflict knowledgesdk.KnowledgePageConflict
 		if json.Unmarshal(input.Details, &conflict) == nil && conflict.CurrentDraftRevision > 0 && conflict.BasePublishedVersion >= 0 && len(conflict.CurrentContentSHA256) == 64 && !conflict.CurrentUpdatedAt.IsZero() {
 			return &knowledgesdk.KnowledgePageConflictError{Err: classified, Conflict: conflict}
@@ -218,12 +218,24 @@ func decodeRemoteError(input *knowledgecontract.SaaSError) error {
 	return classified
 }
 
-func safeClass(value string) string {
+func safeClass(value string) knowledgesdk.ErrorClass {
 	switch strings.TrimSpace(value) {
-	case "bad_request", "forbidden", "not_found", "conflict", "unavailable":
-		return strings.TrimSpace(value)
+	case string(knowledgesdk.ErrorClassBadRequest):
+		return knowledgesdk.ErrorClassBadRequest
+	case string(knowledgesdk.ErrorClassForbidden):
+		return knowledgesdk.ErrorClassForbidden
+	case string(knowledgesdk.ErrorClassNotFound):
+		return knowledgesdk.ErrorClassNotFound
+	case string(knowledgesdk.ErrorClassConflict):
+		return knowledgesdk.ErrorClassConflict
+	case string(knowledgesdk.ErrorClassRateLimited):
+		return knowledgesdk.ErrorClassRateLimited
+	case string(knowledgesdk.ErrorClassUnavailable):
+		return knowledgesdk.ErrorClassUnavailable
+	case string(knowledgesdk.ErrorClassInternal):
+		return knowledgesdk.ErrorClassInternal
 	default:
-		return "unavailable"
+		return knowledgesdk.ErrorClassInternal
 	}
 }
 
@@ -248,17 +260,21 @@ func safeMessage(value string) string {
 	return value
 }
 
-func statusClass(status int) string {
+func statusClass(status int) knowledgesdk.ErrorClass {
 	switch status {
 	case http.StatusBadRequest, http.StatusRequestEntityTooLarge:
-		return "bad_request"
+		return knowledgesdk.ErrorClassBadRequest
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return "forbidden"
+		return knowledgesdk.ErrorClassForbidden
 	case http.StatusNotFound:
-		return "not_found"
+		return knowledgesdk.ErrorClassNotFound
 	case http.StatusConflict:
-		return "conflict"
+		return knowledgesdk.ErrorClassConflict
+	case http.StatusTooManyRequests:
+		return knowledgesdk.ErrorClassRateLimited
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return knowledgesdk.ErrorClassUnavailable
 	default:
-		return "unavailable"
+		return knowledgesdk.ErrorClassInternal
 	}
 }

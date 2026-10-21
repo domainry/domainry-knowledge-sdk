@@ -155,7 +155,7 @@ func (client *remoteClient) invoke(ctx context.Context, operation string, input,
 		return err
 	}
 	if response.Error != nil {
-		return &Error{Class: response.Error.Class, Code: response.Error.Code, Message: response.Error.Message, Retryable: response.Error.Retryable}
+		return &Error{Class: safeErrorClass(response.Error.Class), Code: response.Error.Code, Message: response.Error.Message, Retryable: response.Error.Retryable}
 	}
 	if output == nil || len(response.Result) == 0 {
 		return nil
@@ -229,18 +229,43 @@ func (client *remoteClient) request(ctx context.Context, method, requestPath str
 	return nil
 }
 
-func statusClass(status int) string {
+func statusClass(status int) ErrorClass {
 	switch status {
 	case http.StatusBadRequest, http.StatusRequestEntityTooLarge:
-		return "bad_request"
+		return ErrorClassBadRequest
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return "forbidden"
+		return ErrorClassForbidden
 	case http.StatusNotFound:
-		return "not_found"
+		return ErrorClassNotFound
 	case http.StatusConflict:
-		return "conflict"
+		return ErrorClassConflict
+	case http.StatusTooManyRequests:
+		return ErrorClassRateLimited
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return ErrorClassUnavailable
 	default:
-		return "unavailable"
+		return ErrorClassInternal
+	}
+}
+
+func safeErrorClass(class string) ErrorClass {
+	switch strings.TrimSpace(class) {
+	case string(ErrorClassBadRequest):
+		return ErrorClassBadRequest
+	case string(ErrorClassForbidden):
+		return ErrorClassForbidden
+	case string(ErrorClassNotFound):
+		return ErrorClassNotFound
+	case string(ErrorClassConflict):
+		return ErrorClassConflict
+	case string(ErrorClassRateLimited):
+		return ErrorClassRateLimited
+	case string(ErrorClassUnavailable):
+		return ErrorClassUnavailable
+	case string(ErrorClassInternal):
+		return ErrorClassInternal
+	default:
+		return ErrorClassInternal
 	}
 }
 

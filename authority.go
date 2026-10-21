@@ -8,3 +8,15 @@ type Authority = toolsdk.Authority
 
 // Error is the shared structured Knowledge service error.
 type Error = toolsdk.Error
+
+type ErrorClass = toolsdk.ErrorClass
+
+const (
+	ErrorClassBadRequest  = toolsdk.ErrorClassBadRequest
+	ErrorClassForbidden   = toolsdk.ErrorClassForbidden
+	ErrorClassNotFound    = toolsdk.ErrorClassNotFound
+	ErrorClassConflict    = toolsdk.ErrorClassConflict
+	ErrorClassRateLimited = toolsdk.ErrorClassRateLimited
+	ErrorClassUnavailable = toolsdk.ErrorClassUnavailable
+	ErrorClassInternal    = toolsdk.ErrorClassInternal
+)
