@@ -47,6 +47,7 @@ type SaaSDocumentChunkUploadRequest struct {
 type SaaSDocumentDownloadRequest struct {
 	Library   string                 `json:"library"`
 	ID        string                 `json:"id"`
+	PageID    string                 `json:"page_id,omitempty"`
 	Authority knowledgesdk.Authority `json:"authority"`
 	Grants    []SaaSGrant            `json:"grants,omitempty"`
 }

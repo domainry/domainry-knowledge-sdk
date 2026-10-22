@@ -11,6 +11,12 @@ import (
 type Service interface {
 	knowledgesdk.PageService
 	knowledgesdk.CollaborationService
+	knowledgesdk.PageTemplateService
+	knowledgesdk.PageShareService
+	knowledgesdk.WebhookService
+	knowledgesdk.KnowledgeAgentReferenceService
+	knowledgesdk.KnowledgeAIService
+	knowledgesdk.KnowledgeApplicationCardService
 
 	CreateKnowledgeLibrary(context.Context, knowledgesdk.KnowledgeLibraryCreate, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
 	KnowledgeLibraries(context.Context, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibraryPage, error)
@@ -19,6 +25,9 @@ type Service interface {
 	KnowledgeLibraryMembers(context.Context, string, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibraryMembers, error)
 	SetKnowledgeLibraryMember(context.Context, string, string, knowledgesdk.KnowledgeLibraryMemberWrite, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
 	RemoveKnowledgeLibraryMember(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	KnowledgeLibraryOrganizationMembers(context.Context, string, string, int, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibraryOrganizationMembers, error)
+	SetKnowledgeLibraryOrganizationMember(context.Context, string, string, knowledgesdk.KnowledgeLibraryMemberWrite, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
+	RemoveKnowledgeLibraryOrganizationMember(context.Context, string, string, int64, knowledgesdk.Authority) (knowledgesdk.KnowledgeLibrary, error)
 
 	UploadKnowledgeDocument(context.Context, string, knowledgesdk.KnowledgeDocumentUpload, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocument, error)
 	UploadKnowledgeDocumentChunk(context.Context, string, knowledgesdk.KnowledgeDocumentUploadChunk, knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentUploadProgress, error)

@@ -5,6 +5,19 @@ import (
 	"time"
 )
 
+const (
+	KnowledgeSubjectUser         = "user"
+	KnowledgeSubjectOrganization = "organization"
+)
+
+// KnowledgeAccessSubject is a stable Identity subject reference. Organization
+// membership is evaluated against the caller's live Identity organization
+// scope; Knowledge never persists an organization tree snapshot.
+type KnowledgeAccessSubject struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
 // Libraries belong to a trusted Runtime/Workspace scope. Role is the current
 // caller's membership, not a transferable grant. Personal libraries cannot be
 // given members. Creating a library does not configure a remote knowledge source.
@@ -59,6 +72,17 @@ type KnowledgeLibraryMemberWrite struct {
 	Role             string `json:"role"`
 	ExpectedRevision int64  `json:"expected_revision"`
 }
+type KnowledgeLibraryOrganizationMember struct {
+	OrganizationID string    `json:"organization_id"`
+	Role           string    `json:"role"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+type KnowledgeLibraryOrganizationMembers struct {
+	Items     []KnowledgeLibraryOrganizationMember `json:"items"`
+	NextAfter string                               `json:"next_after,omitempty"`
+	Complete  bool                                 `json:"complete"`
+	Revision  int64                                `json:"revision"`
+}
 type KnowledgeLibraryService interface {
 	CreateKnowledgeLibrary(context.Context, KnowledgeLibraryCreate, Authority) (KnowledgeLibrary, error)
 	KnowledgeLibraries(context.Context, string, int, Authority) (KnowledgeLibraryPage, error)
@@ -67,6 +91,9 @@ type KnowledgeLibraryService interface {
 	KnowledgeLibraryMembers(context.Context, string, string, int, Authority) (KnowledgeLibraryMembers, error)
 	SetKnowledgeLibraryMember(context.Context, string, string, KnowledgeLibraryMemberWrite, Authority) (KnowledgeLibrary, error)
 	RemoveKnowledgeLibraryMember(context.Context, string, string, int64, Authority) (KnowledgeLibrary, error)
+	KnowledgeLibraryOrganizationMembers(context.Context, string, string, int, Authority) (KnowledgeLibraryOrganizationMembers, error)
+	SetKnowledgeLibraryOrganizationMember(context.Context, string, string, KnowledgeLibraryMemberWrite, Authority) (KnowledgeLibrary, error)
+	RemoveKnowledgeLibraryOrganizationMember(context.Context, string, string, int64, Authority) (KnowledgeLibrary, error)
 }
 
 // The host resolves live Identity on every operation, evaluating facts loaded
@@ -75,4 +102,5 @@ type KnowledgeLibraryService interface {
 type KnowledgeLibraryAuthorizer interface {
 	AuthorizeKnowledgeLibrary(context.Context, string, KnowledgeLibrary, Authority) error
 	ValidateKnowledgeLibraryMember(context.Context, string, Authority) error
+	ValidateKnowledgeLibraryOrganizationMember(context.Context, string, Authority) error
 }

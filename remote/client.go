@@ -179,6 +179,17 @@ func answerChallenge(ctx context.Context, challenge knowledgecontract.SaaSChalle
 		if err := options.LibraryAuthorizer.ValidateKnowledgeLibraryMember(ctx, input.User, input.Authority); err != nil {
 			return knowledgecontract.SaaSGrant{}, err
 		}
+	case "authorize.library_organization_member":
+		var input struct {
+			OrganizationID string                 `json:"organization_id"`
+			Authority      knowledgesdk.Authority `json:"authority"`
+		}
+		if options.LibraryAuthorizer == nil || json.Unmarshal(challenge.Input, &input) != nil {
+			return knowledgecontract.SaaSGrant{}, remoteError("unavailable", "knowledge.library_authorizer_required", false, nil)
+		}
+		if err := options.LibraryAuthorizer.ValidateKnowledgeLibraryOrganizationMember(ctx, input.OrganizationID, input.Authority); err != nil {
+			return knowledgecontract.SaaSGrant{}, err
+		}
 	case "authorize.document_source":
 		var input struct {
 			Source    knowledgesdk.KnowledgeDocumentSourceAccess `json:"source"`

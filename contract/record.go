@@ -9,7 +9,8 @@ import (
 )
 
 type Record struct {
-	ID        string          `json:"id"`
+	ID        int64           `json:"id"`
+	RecordID  string          `json:"record_id"`
 	Kind      string          `json:"kind"`
 	Title     string          `json:"title"`
 	Status    string          `json:"status"`
@@ -20,7 +21,7 @@ type Record struct {
 }
 type Write struct {
 	ClientID         string          `json:"client_id"`
-	ID               string          `json:"id,omitempty"`
+	RecordID         string          `json:"record_id,omitempty"`
 	ExpectedRevision int64           `json:"expected_revision"`
 	Title            string          `json:"title"`
 	Status           string          `json:"status"`
@@ -28,7 +29,7 @@ type Write struct {
 }
 type Page struct {
 	Items      []Record `json:"items"`
-	NextCursor string   `json:"next_cursor,omitempty"`
+	NextCursor int64    `json:"next_cursor,omitempty"`
 	Complete   bool     `json:"complete"`
 }
 type Validator func(previous *Record, next *Record) error
@@ -37,7 +38,7 @@ type Validator func(previous *Record, next *Record) error
 // Callers supply product rules; implementations keep validation and commit atomic.
 type Repository interface {
 	Get(context.Context, string, string, int64, sdk.Authority) (Record, error)
-	List(context.Context, string, string, string, int, sdk.Authority) (Page, error)
+	List(context.Context, string, string, int64, int, sdk.Authority) (Page, error)
 	Save(context.Context, string, Write, sdk.Authority, Validator) (Record, error)
 	Receipt(context.Context, string, Write, sdk.Authority) (Record, bool, error)
 }

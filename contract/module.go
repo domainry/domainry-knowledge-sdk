@@ -17,20 +17,31 @@ type Knowledge interface {
 }
 
 type Options struct {
-	DocumentStorage           knowledgesdk.KnowledgeDocumentStorage
-	DocumentSecurity          DocumentSecurityScanner
-	DocumentPoll              time.Duration
-	DocumentWorkTimeout       time.Duration
-	DocumentUploadIdleTimeout time.Duration
-	LibraryKnowledge          []LibraryKnowledgeBinding
-	KnowledgeDatasources      knowledgesdk.KnowledgeDatasourceCatalog
-	LibraryAuthorizer         knowledgesdk.KnowledgeLibraryAuthorizer
-	SourceAuthorizer          knowledgesdk.KnowledgeDocumentSourceAuthorizer
-	Knowledge                 Knowledge
-	PrincipalDirectory        knowledgesdk.KnowledgePrincipalDirectory
-	AccessExplainer           knowledgesdk.KnowledgeAccessExplainer
-	AuditAppender             knowledgesdk.KnowledgeAuditAppender
-	CollaborationPublisher    knowledgesdk.KnowledgeCollaborationPublisher
+	DocumentStorage            knowledgesdk.KnowledgeDocumentStorage
+	DocumentSecurity           DocumentSecurityScanner
+	DocumentPoll               time.Duration
+	DocumentWorkTimeout        time.Duration
+	DocumentUploadIdleTimeout  time.Duration
+	LibraryKnowledge           []LibraryKnowledgeBinding
+	KnowledgeDatasources       knowledgesdk.KnowledgeDatasourceCatalog
+	LibraryAuthorizer          knowledgesdk.KnowledgeLibraryAuthorizer
+	SourceAuthorizer           knowledgesdk.KnowledgeDocumentSourceAuthorizer
+	Knowledge                  Knowledge
+	PrincipalDirectory         knowledgesdk.KnowledgePrincipalDirectory
+	AccessExplainer            knowledgesdk.KnowledgeAccessExplainer
+	AuditAppender              knowledgesdk.KnowledgeAuditAppender
+	AuditReader                knowledgesdk.KnowledgeAuditReader
+	CollaborationPublisher     knowledgesdk.KnowledgeCollaborationPublisher
+	CollaborationNotifier      knowledgesdk.KnowledgeCollaborationNotifier
+	OutboundApprover           knowledgesdk.KnowledgePageOutboundApprover
+	EmbedProviders             []knowledgesdk.EmbedProvider
+	TrustedApplications        []knowledgesdk.TrustedApplicationRegistration
+	TrustedApplicationResolver knowledgesdk.KnowledgeTrustedApplicationResolver
+	WebhookDeliverer           knowledgesdk.KnowledgeWebhookDeliverer
+	WebhookPoll                time.Duration
+	AIProvider                 knowledgesdk.KnowledgeAIProvider
+	AIPoll                     time.Duration
+	ApplicationCardProviders   []knowledgesdk.KnowledgeApplicationCardProvider
 }
 
 type LibraryKnowledgeBinding struct {
