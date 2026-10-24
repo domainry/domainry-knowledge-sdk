@@ -3,9 +3,12 @@ package files
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"slices"
@@ -13,6 +16,7 @@ import (
 	"time"
 
 	"github.com/domainry/domainry-foundation/telemetry"
+	knowledgecontract "github.com/domainry/domainry-knowledge-sdk/contract"
 )
 
 const (
@@ -104,12 +108,135 @@ func newRemoteClient(config RemoteConfig, runtimeID string) (*remoteClient, erro
 }
 
 func (client *remoteClient) Upload(ctx context.Context, authority Authority, input Upload) (File, error) {
+	digest := sha256.Sum256(input.Data)
+	return client.UploadStream(ctx, authority, StreamUpload{
+		ClientID: input.ClientID, Filename: input.Filename, ContentType: input.ContentType,
+		SizeBytes: int64(len(input.Data)), SHA256: hex.EncodeToString(digest[:]), Content: bytes.NewReader(input.Data),
+	})
+}
+
+func (client *remoteClient) UploadStream(ctx context.Context, authority Authority, input StreamUpload) (File, error) {
+	if ctx == nil || input.Content == nil || input.SizeBytes < 1 || input.SizeBytes > MaxContentBytes || len(input.SHA256) != 64 {
+		return File{}, &Error{Class: ErrorClassBadRequest, Code: "knowledge.file_invalid"}
+	}
+	if rawDigest, err := hex.DecodeString(input.SHA256); err != nil || len(rawDigest) != sha256.Size || input.SHA256 != strings.ToLower(input.SHA256) {
+		return File{}, &Error{Class: ErrorClassBadRequest, Code: "knowledge.file_invalid"}
+	}
+	metadata, err := json.Marshal(struct {
+		Authority Authority    `json:"authority"`
+		Input     StreamUpload `json:"input"`
+	}{authority, input})
+	if err != nil || len(metadata) == 0 || len(metadata) > 256<<10 {
+		return File{}, &Error{Class: ErrorClassBadRequest, Code: "knowledge.request_invalid", Cause: err}
+	}
+
+	reader, writer := io.Pipe()
+	multipartWriter := multipart.NewWriter(writer)
+	writeDone := make(chan error, 1)
+	go func() {
+		var writeErr error
+		defer func() {
+			if writeErr == nil {
+				writeErr = multipartWriter.Close()
+			}
+			_ = writer.CloseWithError(writeErr)
+			writeDone <- writeErr
+		}()
+		metadataPart, partErr := multipartWriter.CreateFormField("metadata")
+		if partErr != nil {
+			writeErr = partErr
+			return
+		}
+		if _, partErr = metadataPart.Write(metadata); partErr != nil {
+			writeErr = partErr
+			return
+		}
+		contentPart, partErr := multipartWriter.CreateFormFile("content", input.Filename)
+		if partErr != nil {
+			writeErr = partErr
+			return
+		}
+		limited := &io.LimitedReader{R: input.Content, N: input.SizeBytes + 1}
+		written, partErr := io.CopyBuffer(contentPart, limited, make([]byte, 128*1024))
+		if partErr != nil {
+			writeErr = partErr
+			return
+		}
+		if written != input.SizeBytes || limited.N != 1 {
+			writeErr = &Error{Class: ErrorClassBadRequest, Code: "knowledge.file_size_mismatch"}
+		}
+	}()
+
+	endpoint := *client.baseURL
+	endpoint.Path = strings.TrimRight(client.baseURL.Path, "/") + knowledgecontract.SaaSFileUploadPath
+	requestContext := telemetry.WithHTTPClientOperation(ctx, "knowledge.files.upload_stream")
+	request, err := http.NewRequestWithContext(requestContext, http.MethodPost, endpoint.String(), reader)
+	if err != nil {
+		_ = reader.CloseWithError(err)
+		return File{}, &Error{Class: ErrorClassUnavailable, Code: "knowledge.request_invalid", Cause: err}
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("User-Agent", "domainry-knowledge-files-sdk-go")
+	request.Header.Set(runtimeHeader, client.runtimeID)
+	request.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+	if client.token != "" {
+		request.Header.Set("Authorization", "Bearer "+client.token)
+	}
+	httpClient := *client.httpClient
+	httpClient.Timeout = 0
+	response, err := httpClient.Do(request)
+	if err != nil {
+		_ = reader.CloseWithError(err)
+		select {
+		case <-writeDone:
+		default:
+		}
+		return File{}, &Error{Class: ErrorClassUnavailable, Code: "knowledge.remote_unavailable", Retryable: true, Cause: err}
+	}
+	defer response.Body.Close()
 	var output File
-	err := client.invoke(ctx, "files.upload", struct {
-		Authority Authority `json:"authority"`
-		Input     Upload    `json:"input"`
-	}{authority, input}, &output)
-	return output, err
+	responseErr := client.decodeStreamResponse(response, &output)
+	writeErr := <-writeDone
+	if responseErr != nil {
+		return File{}, responseErr
+	}
+	if writeErr != nil {
+		return File{}, writeErr
+	}
+	return output, nil
+}
+
+func (client *remoteClient) decodeStreamResponse(response *http.Response, output any) error {
+	raw, err := io.ReadAll(io.LimitReader(response.Body, client.responseLimit+1))
+	if err != nil {
+		return &Error{Class: ErrorClassUnavailable, Code: "knowledge.response_read_failed", Retryable: true, Cause: err}
+	}
+	if int64(len(raw)) > client.responseLimit {
+		return &Error{Class: ErrorClassUnavailable, Code: "knowledge.response_too_large"}
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		var failure struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(raw, &failure) == nil && strings.TrimSpace(failure.Code) != "" {
+			return &Error{Class: statusClass(response.StatusCode), Code: failure.Code, Message: failure.Message, Retryable: response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500}
+		}
+		return &Error{Class: statusClass(response.StatusCode), Code: "knowledge.remote_request_failed", Retryable: response.StatusCode >= 500}
+	}
+	var envelope remoteResponse
+	if json.Unmarshal(raw, &envelope) != nil || envelope.Error != nil {
+		if envelope.Error != nil {
+			return &Error{Class: safeErrorClass(envelope.Error.Class), Code: envelope.Error.Code, Message: envelope.Error.Message, Retryable: envelope.Error.Retryable}
+		}
+		return &Error{Class: ErrorClassUnavailable, Code: "knowledge.response_invalid"}
+	}
+	decoder := json.NewDecoder(bytes.NewReader(envelope.Result))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(output) != nil || decoder.Decode(&struct{}{}) != io.EOF {
+		return &Error{Class: ErrorClassUnavailable, Code: "knowledge.response_invalid"}
+	}
+	return nil
 }
 
 func (client *remoteClient) Get(ctx context.Context, authority Authority, id string) (File, error) {

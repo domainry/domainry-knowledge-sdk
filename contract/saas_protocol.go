@@ -9,6 +9,7 @@ import (
 const (
 	SaaSDiscoveryPath         = "/knowledge/v1/discovery"
 	SaaSInvokePath            = "/knowledge/v1/invoke"
+	SaaSFileUploadPath        = "/knowledge/v1/files/upload"
 	SaaSDocumentUploadPath    = "/knowledge/v1/documents/upload"
 	SaaSDocumentDownloadPath  = "/knowledge/v1/documents/download"
 	SaaSSourceDocumentPutPath = "/knowledge/v1/sources/documents"

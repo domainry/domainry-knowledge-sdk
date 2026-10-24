@@ -6,6 +6,7 @@ package files
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -25,6 +26,17 @@ type Upload struct {
 	Filename    string `json:"filename"`
 	ContentType string `json:"content_type"`
 	Data        []byte `json:"data"`
+}
+
+// StreamUpload carries immutable file metadata separately from its bytes so
+// callers and the standalone Knowledge service do not buffer an entire file.
+type StreamUpload struct {
+	ClientID    string    `json:"client_id"`
+	Filename    string    `json:"filename"`
+	ContentType string    `json:"content_type"`
+	SizeBytes   int64     `json:"size_bytes"`
+	SHA256      string    `json:"sha256"`
+	Content     io.Reader `json:"-"`
 }
 
 type File struct {
@@ -54,6 +66,7 @@ type Binding struct {
 
 type Service interface {
 	Upload(context.Context, Authority, Upload) (File, error)
+	UploadStream(context.Context, Authority, StreamUpload) (File, error)
 	Get(context.Context, Authority, string) (File, error)
 	Download(context.Context, Authority, string) (Download, error)
 	Bind(context.Context, Authority, string, Binding) error
