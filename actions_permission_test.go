@@ -37,3 +37,18 @@ func TestAuthorizationActionsExposeLocalizedPermissionPresentation(t *testing.T)
 		}
 	}
 }
+
+func TestSharedLibraryCreationPermissionExplainsItsGlobalScope(t *testing.T) {
+	action, found, err := AuthorizationAction(ActionLibrariesCreate)
+	if err != nil || !found || action.Permission == nil {
+		t.Fatalf("shared library creation permission unavailable: found=%t err=%v", found, err)
+	}
+	english := action.Permission.I18n["en"]
+	chinese := action.Permission.I18n["zh-CN"]
+	if english.Label != "Shared knowledge libraries · Create" || english.Description != "Allows creating shared knowledge libraries. Personal libraries do not require this permission." {
+		t.Fatalf("unexpected English shared-library presentation: %+v", english)
+	}
+	if chinese.Label != "共享知识库 · 创建" || chinese.Description != "允许创建共享知识库；个人知识库不需要此权限。" {
+		t.Fatalf("unexpected Chinese shared-library presentation: %+v", chinese)
+	}
+}

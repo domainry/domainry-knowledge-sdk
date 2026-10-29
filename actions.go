@@ -379,6 +379,20 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 }
 
 func knowledgePermissionText(groupKey, resourceKey, operationKey string) actioncontract.PermissionLocalizedText {
+	if resourceKey == "knowledge.libraries" && operationKey == "create" {
+		return actioncontract.PermissionLocalizedText{
+			"en": {
+				ModuleLabel: "Knowledge", GroupLabel: "Shared knowledge libraries", ResourceLabel: "Shared knowledge libraries",
+				OperationLabel: "Create", Label: "Shared knowledge libraries · Create",
+				Description: "Allows creating shared knowledge libraries. Personal libraries do not require this permission.",
+			},
+			"zh-CN": {
+				ModuleLabel: "知识库", GroupLabel: "共享知识库", ResourceLabel: "共享知识库",
+				OperationLabel: "创建", Label: "共享知识库 · 创建",
+				Description: "允许创建共享知识库；个人知识库不需要此权限。",
+			},
+		}
+	}
 	groupEnglish := knowledgePermissionEnglishLabel(groupKey)
 	resourceEnglish := knowledgePermissionEnglishLabel(resourceKey)
 	operationEnglish, operationChinese := knowledgePermissionOperation(operationKey)
