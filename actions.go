@@ -356,7 +356,7 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 			Key: spec.key, Owner: AuthorizationOwner, ModuleKey: "knowledge", GroupKey: spec.capability,
 			ResourceKey: resourceKey, OperationKey: spec.key[separator+1:],
 			Label: spec.label, Description: spec.label, Category: spec.capabilityLabel,
-			GrantMode: actioncontract.PermissionGrantDirect, ScopeKind: actioncontract.PermissionScopeNone,
+			GrantMode: actioncontract.PermissionGrantBundled, ScopeKind: actioncontract.PermissionScopeNone,
 			DefaultLocale: "en", I18n: knowledgePermissionText(spec.capability, resourceKey, spec.key[separator+1:]),
 			LifecycleStatus: actioncontract.LifecycleActive,
 		},

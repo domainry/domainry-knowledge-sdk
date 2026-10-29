@@ -1,6 +1,10 @@
 package knowledgesdk
 
-import "testing"
+import (
+	"testing"
+
+	actioncontract "github.com/domainry/domainry-foundation/action"
+)
 
 func TestAuthorizationActionsExposeLocalizedPermissionPresentation(t *testing.T) {
 	definitions, err := AuthorizationActions()
@@ -14,6 +18,9 @@ func TestAuthorizationActionsExposeLocalizedPermissionPresentation(t *testing.T)
 		}
 		if permission.ModuleKey != "knowledge" || permission.GroupKey == "" || permission.ScopeKind == "" || permission.DefaultLocale != "en" {
 			t.Fatalf("permission %q has incomplete presentation contract: %+v", permission.Key, permission)
+		}
+		if permission.GrantMode != actioncontract.PermissionGrantBundled {
+			t.Fatalf("permission %q is not source-role bundled: %q", permission.Key, permission.GrantMode)
 		}
 		for _, locale := range []string{"en", "zh-CN"} {
 			text := permission.I18n[locale]
