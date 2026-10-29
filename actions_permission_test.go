@@ -1,6 +1,8 @@
 package knowledgesdk
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 
 	actioncontract "github.com/domainry/domainry-foundation/action"
@@ -50,5 +52,17 @@ func TestSharedLibraryCreationPermissionExplainsItsGlobalScope(t *testing.T) {
 	}
 	if chinese.Label != "共享知识库 · 创建" || chinese.Description != "允许创建共享知识库；个人知识库不需要此权限。" {
 		t.Fatalf("unexpected Chinese shared-library presentation: %+v", chinese)
+	}
+	wantLocales := []string{"de", "en", "es", "fr", "it", "ja", "ko", "pt", "tr", "zh-CN", "zh-TW"}
+	gotLocales := make([]string, 0, len(action.Permission.I18n))
+	for locale, text := range action.Permission.I18n {
+		gotLocales = append(gotLocales, locale)
+		if text.ModuleLabel == "" || text.GroupLabel == "" || text.ResourceLabel == "" || text.OperationLabel == "" || text.Label == "" || text.Description == "" {
+			t.Fatalf("shared-library presentation is incomplete for %s: %+v", locale, text)
+		}
+	}
+	sort.Strings(gotLocales)
+	if !reflect.DeepEqual(gotLocales, wantLocales) {
+		t.Fatalf("shared-library locale coverage=%v want=%v", gotLocales, wantLocales)
 	}
 }

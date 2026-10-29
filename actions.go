@@ -391,6 +391,51 @@ func knowledgePermissionText(groupKey, resourceKey, operationKey string) actionc
 				OperationLabel: "创建", Label: "共享知识库 · 创建",
 				Description: "允许创建共享知识库；个人知识库不需要此权限。",
 			},
+			"zh-TW": {
+				ModuleLabel: "知識庫", GroupLabel: "共享知識庫", ResourceLabel: "共享知識庫",
+				OperationLabel: "建立", Label: "共享知識庫 · 建立",
+				Description: "允許建立共享知識庫；個人知識庫不需要此權限。",
+			},
+			"ja": {
+				ModuleLabel: "ナレッジベース", GroupLabel: "共有ナレッジベース", ResourceLabel: "共有ナレッジベース",
+				OperationLabel: "作成", Label: "共有ナレッジベース · 作成",
+				Description: "共有ナレッジベースの作成を許可します。個人用ナレッジベースにはこの権限は必要ありません。",
+			},
+			"ko": {
+				ModuleLabel: "지식 베이스", GroupLabel: "공유 지식 베이스", ResourceLabel: "공유 지식 베이스",
+				OperationLabel: "만들기", Label: "공유 지식 베이스 · 만들기",
+				Description: "공유 지식 베이스 생성을 허용합니다. 개인 지식 베이스에는 이 권한이 필요하지 않습니다.",
+			},
+			"es": {
+				ModuleLabel: "Base de conocimiento", GroupLabel: "Bases de conocimiento compartidas", ResourceLabel: "Bases de conocimiento compartidas",
+				OperationLabel: "Crear", Label: "Bases de conocimiento compartidas · Crear",
+				Description: "Permite crear bases de conocimiento compartidas. Las bases de conocimiento personales no requieren este permiso.",
+			},
+			"pt": {
+				ModuleLabel: "Base de conhecimento", GroupLabel: "Bases de conhecimento compartilhadas", ResourceLabel: "Bases de conhecimento compartilhadas",
+				OperationLabel: "Criar", Label: "Bases de conhecimento compartilhadas · Criar",
+				Description: "Permite criar bases de conhecimento compartilhadas. As bases de conhecimento pessoais não exigem esta permissão.",
+			},
+			"fr": {
+				ModuleLabel: "Base de connaissances", GroupLabel: "Bases de connaissances partagées", ResourceLabel: "Bases de connaissances partagées",
+				OperationLabel: "Créer", Label: "Bases de connaissances partagées · Créer",
+				Description: "Autorise la création de bases de connaissances partagées. Les bases de connaissances personnelles ne nécessitent pas cette autorisation.",
+			},
+			"de": {
+				ModuleLabel: "Wissensdatenbank", GroupLabel: "Gemeinsame Wissensdatenbanken", ResourceLabel: "Gemeinsame Wissensdatenbanken",
+				OperationLabel: "Erstellen", Label: "Gemeinsame Wissensdatenbanken · Erstellen",
+				Description: "Erlaubt das Erstellen gemeinsamer Wissensdatenbanken. Persönliche Wissensdatenbanken benötigen diese Berechtigung nicht.",
+			},
+			"it": {
+				ModuleLabel: "Base di conoscenza", GroupLabel: "Basi di conoscenza condivise", ResourceLabel: "Basi di conoscenza condivise",
+				OperationLabel: "Crea", Label: "Basi di conoscenza condivise · Crea",
+				Description: "Consente di creare basi di conoscenza condivise. Le basi di conoscenza personali non richiedono questa autorizzazione.",
+			},
+			"tr": {
+				ModuleLabel: "Bilgi tabanı", GroupLabel: "Paylaşılan bilgi tabanları", ResourceLabel: "Paylaşılan bilgi tabanları",
+				OperationLabel: "Oluştur", Label: "Paylaşılan bilgi tabanları · Oluştur",
+				Description: "Paylaşılan bilgi tabanları oluşturmaya izin verir. Kişisel bilgi tabanları için bu izin gerekmez.",
+			},
 		}
 	}
 	groupEnglish := knowledgePermissionEnglishLabel(groupKey)
