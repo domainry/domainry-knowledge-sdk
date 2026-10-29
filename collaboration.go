@@ -103,8 +103,12 @@ type KnowledgePageEditHistoryPage struct {
 }
 
 const (
-	KnowledgeSuggestionInsert = "insert"
-	KnowledgeSuggestionDelete = "delete"
+	KnowledgeSuggestionInsert  = "insert"
+	KnowledgeSuggestionDelete  = "delete"
+	KnowledgeSuggestionReplace = "replace"
+
+	KnowledgeSuggestionSourceKnowledgeUI  = "knowledge_ui"
+	KnowledgeSuggestionSourceVerdentAgent = "verdent_agent"
 
 	KnowledgeSuggestionOpen      = "open"
 	KnowledgeSuggestionAccepted  = "accepted"
@@ -117,36 +121,47 @@ const (
 )
 
 type KnowledgePageSuggestion struct {
-	ID                string                     `json:"id"`
-	LibraryID         string                     `json:"library_id"`
-	PageID            string                     `json:"page_id"`
-	Kind              string                     `json:"kind"`
-	Status            string                     `json:"status"`
-	BaseDraftRevision int64                      `json:"base_draft_revision"`
-	Anchor            KnowledgePageCommentAnchor `json:"anchor"`
-	ProposedBlockID   string                     `json:"proposed_block_id,omitempty"`
-	ProposedText      string                     `json:"proposed_text,omitempty"`
-	Comment           string                     `json:"comment,omitempty"`
-	MentionedUserIDs  []string                   `json:"mentioned_user_ids"`
-	AuthorUserID      string                     `json:"author_user_id"`
-	DecidedByUserID   string                     `json:"decided_by_user_id,omitempty"`
-	Revision          int64                      `json:"revision"`
-	CreatedAt         time.Time                  `json:"created_at"`
-	UpdatedAt         time.Time                  `json:"updated_at"`
+	ID                 string                     `json:"id"`
+	LibraryID          string                     `json:"library_id"`
+	PageID             string                     `json:"page_id"`
+	Kind               string                     `json:"kind"`
+	Source             string                     `json:"source"`
+	ClientID           string                     `json:"client_id"`
+	ToolCallID         string                     `json:"tool_call_id,omitempty"`
+	Status             string                     `json:"status"`
+	BaseDraftRevision  int64                      `json:"base_draft_revision"`
+	Anchor             KnowledgePageCommentAnchor `json:"anchor"`
+	ProposedBlockID    string                     `json:"proposed_block_id,omitempty"`
+	ProposedText       string                     `json:"proposed_text,omitempty"`
+	Comment            string                     `json:"comment,omitempty"`
+	MentionedUserIDs   []string                   `json:"mentioned_user_ids"`
+	AuthorUserID       string                     `json:"author_user_id"`
+	DecidedByUserID    string                     `json:"decided_by_user_id,omitempty"`
+	DecisionSource     string                     `json:"decision_source,omitempty"`
+	DecisionClientID   string                     `json:"decision_client_id,omitempty"`
+	DecisionToolCallID string                     `json:"decision_tool_call_id,omitempty"`
+	Revision           int64                      `json:"revision"`
+	CreatedAt          time.Time                  `json:"created_at"`
+	UpdatedAt          time.Time                  `json:"updated_at"`
 }
 
 type KnowledgePageSuggestionCreate struct {
-	ClientID          string                     `json:"client_id"`
-	Kind              string                     `json:"kind"`
-	BaseDraftRevision int64                      `json:"base_draft_revision"`
-	Anchor            KnowledgePageCommentAnchor `json:"anchor"`
-	ProposedText      string                     `json:"proposed_text,omitempty"`
-	Comment           string                     `json:"comment,omitempty"`
-	MentionedUserIDs  []string                   `json:"mentioned_user_ids"`
+	ClientID            string                     `json:"client_id"`
+	Source              string                     `json:"source"`
+	ToolCallID          string                     `json:"tool_call_id,omitempty"`
+	Kind                string                     `json:"kind"`
+	BaseDraftRevision   int64                      `json:"base_draft_revision"`
+	Anchor              KnowledgePageCommentAnchor `json:"anchor"`
+	ExpectedBlockSHA256 string                     `json:"expected_block_sha256,omitempty"`
+	ProposedText        string                     `json:"proposed_text,omitempty"`
+	Comment             string                     `json:"comment,omitempty"`
+	MentionedUserIDs    []string                   `json:"mentioned_user_ids"`
 }
 
 type KnowledgePageSuggestionDecision struct {
 	ClientID              string `json:"client_id"`
+	Source                string `json:"source"`
+	ToolCallID            string `json:"tool_call_id,omitempty"`
 	ExpectedRevision      int64  `json:"expected_revision"`
 	ExpectedDraftRevision int64  `json:"expected_draft_revision"`
 	Decision              string `json:"decision"` // accept, reject, withdraw
