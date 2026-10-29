@@ -335,6 +335,7 @@ func AuthorizationAction(key string) (actioncontract.ActionDefinition, bool, err
 
 func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, error) {
 	separator := strings.LastIndex(spec.key, ".")
+	resourceKey := spec.key[:separator]
 	idempotency := "not_applicable"
 	auditClass := "owner_read_audit_policy"
 	if spec.effect == actioncontract.EffectWrite {
@@ -352,8 +353,12 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 			{Kind: "saas_rpc", InvocationKey: spec.key},
 		},
 		Permission: &actioncontract.PermissionDefinition{
-			Key: spec.key, Owner: AuthorizationOwner, ResourceKey: spec.key[:separator], OperationKey: spec.key[separator+1:],
-			Label: spec.label, Category: spec.capabilityLabel, GrantMode: actioncontract.PermissionGrantDirect, LifecycleStatus: actioncontract.LifecycleActive,
+			Key: spec.key, Owner: AuthorizationOwner, ModuleKey: "knowledge", GroupKey: spec.capability,
+			ResourceKey: resourceKey, OperationKey: spec.key[separator+1:],
+			Label: spec.label, Description: spec.label, Category: spec.capabilityLabel,
+			GrantMode: actioncontract.PermissionGrantDirect, ScopeKind: actioncontract.PermissionScopeNone,
+			DefaultLocale: "en", I18n: knowledgePermissionText(spec.capability, resourceKey, spec.key[separator+1:]),
+			LifecycleStatus: actioncontract.LifecycleActive,
 		},
 		EffectClass: spec.effect, RiskLevel: spec.risk, IdempotencyDecision: idempotency,
 		AuditClass: auditClass, AuditEvent: strings.ReplaceAll(spec.key, ".", "_"), LifecycleStatus: actioncontract.LifecycleActive,
@@ -363,6 +368,132 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 		return actioncontract.ActionDefinition{}, fmt.Errorf("normalize Knowledge Action %q: %w", spec.key, err)
 	}
 	return normalized, nil
+}
+
+func knowledgePermissionText(groupKey, resourceKey, operationKey string) actioncontract.PermissionLocalizedText {
+	groupEnglish := knowledgePermissionEnglishLabel(groupKey)
+	resourceEnglish := knowledgePermissionEnglishLabel(resourceKey)
+	operationEnglish, operationChinese := knowledgePermissionOperation(operationKey)
+	groupChinese := knowledgePermissionResource(groupKey)
+	resourceChinese := knowledgePermissionResource(resourceKey)
+	return actioncontract.PermissionLocalizedText{
+		"en": {
+			ModuleLabel: "Knowledge", GroupLabel: groupEnglish, ResourceLabel: resourceEnglish,
+			OperationLabel: operationEnglish, Label: resourceEnglish + " · " + operationEnglish,
+			Description: "Provides access to " + resourceEnglish + " for the “" + operationEnglish + "” operation.",
+		},
+		"zh-CN": {
+			ModuleLabel: "知识库", GroupLabel: groupChinese, ResourceLabel: resourceChinese,
+			OperationLabel: operationChinese, Label: resourceChinese + " · " + operationChinese,
+			Description: "允许对“" + resourceChinese + "”执行“" + operationChinese + "”操作。",
+		},
+	}
+}
+
+func knowledgePermissionEnglishLabel(key string) string {
+	if label := map[string]string{
+		"knowledge.library_organization_members": "Library organization members",
+		"knowledge.organization_principals":      "Organization members",
+		"knowledge.page_forms.analytics":         "Page form analytics",
+		"knowledge.page_forms.responses":         "Page form responses",
+		"knowledge.page_identities":              "Page identities",
+		"knowledge.page_personal_state":          "Personal page state",
+		"knowledge.page_relationship_graph":      "Page relationship graph",
+		"knowledge.page_shares.content":          "Shared page content",
+		"knowledge.page_template_versions":       "Page template versions",
+		"knowledge.page_views":                   "Page view history",
+	}[strings.TrimSpace(key)]; label != "" {
+		return label
+	}
+	value := strings.TrimPrefix(strings.TrimSpace(key), "knowledge.")
+	value = strings.NewReplacer(".", " ", "_", " ", "-", " ").Replace(value)
+	words := strings.Fields(value)
+	if len(words) == 0 {
+		return "Knowledge"
+	}
+	words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
+	return strings.Join(words, " ")
+}
+
+func knowledgePermissionResource(capabilityKey string) string {
+	if label := map[string]string{
+		"knowledge.openapi":                      "接口文档",
+		"knowledge.libraries":                    "知识库",
+		"knowledge.library_members":              "知识库成员",
+		"knowledge.library_organization_members": "知识库组织成员",
+		"knowledge.pages":                        "页面",
+		"knowledge.page_references":              "页面引用",
+		"knowledge.page_native_operations":       "页面编辑",
+		"knowledge.page_grid_automations":        "页面表格自动化",
+		"knowledge.page_access":                  "页面访问权限",
+		"knowledge.page_content_policy":          "页面内容策略",
+		"knowledge.page_content":                 "页面内容",
+		"knowledge.page_shares":                  "页面分享",
+		"knowledge.page_shares.content":          "分享页面内容",
+		"knowledge.page_collaboration":           "页面协作",
+		"knowledge.page_live":                    "页面实时更新",
+		"knowledge.page_navigation":              "页面导航",
+		"knowledge.page_personal_state":          "个人页面状态",
+		"knowledge.page_views":                   "页面访问记录",
+		"knowledge.page_collections":             "页面集合",
+		"knowledge.page_metadata":                "页面属性",
+		"knowledge.page_governance":              "页面治理",
+		"knowledge.page_governance_audit":        "页面治理记录",
+		"knowledge.page_search":                  "页面搜索",
+		"knowledge.page_discovery":               "页面关系与发现",
+		"knowledge.page_identities":              "页面身份",
+		"knowledge.page_relationship_graph":      "页面关系图",
+		"knowledge.page_versions":                "页面版本",
+		"knowledge.page_edit_history":            "页面编辑历史",
+		"knowledge.page_suggestions":             "页面修改建议",
+		"knowledge.page_comments":                "页面评论",
+		"knowledge.page_attachments":             "页面附件",
+		"knowledge.page_tasks":                   "页面任务",
+		"knowledge.page_polls":                   "页面投票",
+		"knowledge.page_forms":                   "页面表单",
+		"knowledge.page_forms.responses":         "表单响应",
+		"knowledge.page_forms.analytics":         "表单分析",
+		"knowledge.page_templates":               "页面模板",
+		"knowledge.page_template_versions":       "页面模板版本",
+		"knowledge.webhook_subscriptions":        "事件订阅",
+		"knowledge.webhook_events":               "事件投递记录",
+		"knowledge.agent_references":             "智能体引用",
+		"knowledge.ai_executions":                "AI 辅助",
+		"knowledge.application_cards":            "应用卡片",
+		"knowledge.documents":                    "知识文档",
+		"knowledge.sources":                      "知识来源",
+		"knowledge.access":                       "有效访问权限",
+		"knowledge.principals":                   "用户与组织成员",
+		"knowledge.organization_principals":      "组织成员",
+	}[strings.TrimSpace(capabilityKey)]; label != "" {
+		return label
+	}
+	return "知识库功能"
+}
+
+func knowledgePermissionOperation(operationKey string) (string, string) {
+	if labels, ok := map[string][2]string{
+		"apply": {"Apply", "执行"}, "archive": {"Archive", "归档"}, "bind": {"Bind", "绑定"},
+		"close": {"Close", "结束"}, "confirm": {"Confirm", "确认"}, "connect": {"Connect", "连接"},
+		"copy": {"Copy", "复制"}, "create": {"Create", "创建"}, "decide": {"Review", "审核"},
+		"delete": {"Delete", "删除"}, "diff": {"Compare", "对比"}, "download": {"Download", "下载"},
+		"duplicate": {"Duplicate", "创建副本"}, "events": {"View events", "查看事件"}, "execute": {"Execute", "执行"},
+		"explain": {"Explain", "解释"}, "export": {"Export", "导出"}, "get": {"View", "查看"},
+		"instantiate": {"Create from template", "从模板创建"}, "list": {"List", "查看列表"}, "move": {"Move", "移动"},
+		"move_preview": {"Preview move impact", "预览移动影响"}, "print": {"Print", "打印"}, "process": {"Process", "处理"},
+		"publish": {"Publish", "发布"}, "react": {"React", "添加表态"}, "read": {"Read", "阅读"},
+		"record": {"Record", "记录"}, "redeem": {"Access", "访问"}, "reindex": {"Reindex", "重新建立索引"},
+		"remove": {"Remove", "移除"}, "reorder": {"Reorder", "调整顺序"}, "replay": {"Replay", "重新投递"},
+		"resolve": {"Resolve", "查询"}, "restore": {"Restore", "恢复"}, "retry": {"Retry", "重试"},
+		"review": {"Review", "复核"}, "revoke": {"Revoke", "撤销"}, "search": {"Search", "搜索"},
+		"set": {"Set", "设置"}, "submit": {"Submit", "提交"}, "sync": {"Synchronize", "同步"},
+		"transfer": {"Transfer", "转移"}, "update": {"Update", "更新"}, "upload": {"Upload", "上传"},
+		"vote": {"Vote", "投票"},
+	}[strings.TrimSpace(operationKey)]; ok {
+		return labels[0], labels[1]
+	}
+	value := strings.TrimSpace(operationKey)
+	return value, value
 }
 
 func signedAction(key, capability, capabilityLabel, operation, label string) actioncontract.ActionDefinition {
