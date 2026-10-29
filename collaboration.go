@@ -234,6 +234,35 @@ type KnowledgeOrganizationPrincipalResolveRequest struct {
 	OrganizationIDs []string `json:"organization_ids"`
 }
 
+type KnowledgeDirectoryOrganization struct {
+	OrganizationID string `json:"organization_id"`
+	ParentID       string `json:"parent_id,omitempty"`
+	DisplayName    string `json:"display_name"`
+	NodeType       string `json:"node_type,omitempty"`
+	Depth          int    `json:"depth"`
+	SortOrder      int    `json:"sort_order"`
+	Status         string `json:"status"`
+}
+
+type KnowledgeDirectoryMember struct {
+	KnowledgePrincipal
+	OrganizationID string `json:"organization_id,omitempty"`
+}
+
+type KnowledgePrincipalDirectorySnapshot struct {
+	CurrentUserID string                           `json:"current_user_id"`
+	Organizations []KnowledgeDirectoryOrganization `json:"organizations"`
+	Members       []KnowledgeDirectoryMember       `json:"members"`
+	Complete      bool                             `json:"complete"`
+}
+
+// KnowledgePrincipalDirectorySnapshotProvider is an optional extension used by
+// management UIs that need one bounded, server-authorized organization tree.
+// Keeping it separate preserves the narrow search/resolve directory contract.
+type KnowledgePrincipalDirectorySnapshotProvider interface {
+	KnowledgePrincipalDirectorySnapshot(context.Context, Authority) (KnowledgePrincipalDirectorySnapshot, error)
+}
+
 type KnowledgePrincipalDirectory interface {
 	SearchKnowledgePrincipals(context.Context, string, string, int, Authority) (KnowledgePrincipalPage, error)
 	ResolveKnowledgePrincipals(context.Context, []string, Authority) ([]KnowledgePrincipal, error)

@@ -1304,6 +1304,14 @@ func (value *serviceClient) ResolveKnowledgeOrganizationPrincipals(ctx context.C
 	return output, err
 }
 
+func (value *serviceClient) KnowledgePrincipalDirectorySnapshot(ctx context.Context, authority knowledgesdk.Authority) (knowledgesdk.KnowledgePrincipalDirectorySnapshot, error) {
+	var output knowledgesdk.KnowledgePrincipalDirectorySnapshot
+	err := value.invoke(ctx, knowledgesdk.ActionPrincipalDirectoryRead, struct {
+		Authority knowledgesdk.Authority `json:"authority"`
+	}{authority}, &output)
+	return output, err
+}
+
 func (value *serviceClient) SearchKnowledgeLibraryMembers(ctx context.Context, libraryID, query, after string, limit int, authority knowledgesdk.Authority) (knowledgesdk.KnowledgePrincipalPage, error) {
 	var output knowledgesdk.KnowledgePrincipalPage
 	err := value.invoke(ctx, knowledgesdk.ActionLibraryMembersSearch, struct {

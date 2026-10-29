@@ -140,6 +140,7 @@ const (
 	ActionAccessExplain                 = "knowledge.access.explain"
 	ActionPrincipalsSearch              = "knowledge.principals.search"
 	ActionPrincipalsResolve             = "knowledge.principals.resolve"
+	ActionPrincipalDirectoryRead        = "knowledge.principal_directory.read"
 	ActionOrganizationPrincipalsResolve = "knowledge.organization_principals.resolve"
 	ActionPageSharesList                = "knowledge.page_shares.list"
 	ActionPageSharesCreate              = "knowledge.page_shares.create"
@@ -287,6 +288,7 @@ func AuthorizationActions() ([]actioncontract.ActionDefinition, error) {
 		{ActionAccessExplain, "knowledge.access", "Knowledge access", "POST", "/knowledge/libraries/{libraryID}/access/explain", "Explain effective knowledge access", actioncontract.EffectRead, actioncontract.RiskMedium},
 		{ActionPrincipalsSearch, "knowledge.principals", "Knowledge principals", "GET", "/knowledge/principals", "Search visible knowledge principals", actioncontract.EffectRead, actioncontract.RiskMedium},
 		{ActionPrincipalsResolve, "knowledge.principals", "Knowledge principals", "POST", "/knowledge/principals/resolve", "Resolve visible knowledge principals", actioncontract.EffectRead, actioncontract.RiskMedium},
+		{ActionPrincipalDirectoryRead, "knowledge.principal_directory", "Knowledge principal directory", "GET", "/knowledge/principal-directory", "Read the visible organization and member directory", actioncontract.EffectRead, actioncontract.RiskMedium},
 		{ActionOrganizationPrincipalsResolve, "knowledge.principals", "Knowledge organization principals", "POST", "/knowledge/organization-principals/resolve", "Resolve visible Identity organization principals", actioncontract.EffectRead, actioncontract.RiskMedium},
 	}
 	definitions := make([]actioncontract.ActionDefinition, 0, len(specs)+2)
@@ -461,6 +463,7 @@ func knowledgePermissionEnglishLabel(key string) string {
 	if label := map[string]string{
 		"knowledge.library_organization_members": "Library organization members",
 		"knowledge.organization_principals":      "Organization members",
+		"knowledge.principal_directory":          "Principal directory",
 		"knowledge.page_forms.analytics":         "Page form analytics",
 		"knowledge.page_forms.responses":         "Page form responses",
 		"knowledge.page_identities":              "Page identities",
@@ -531,6 +534,7 @@ func knowledgePermissionResource(capabilityKey string) string {
 		"knowledge.sources":                      "知识来源",
 		"knowledge.access":                       "有效访问权限",
 		"knowledge.principals":                   "用户与组织成员",
+		"knowledge.principal_directory":          "组织与成员目录",
 		"knowledge.organization_principals":      "组织成员",
 	}[strings.TrimSpace(capabilityKey)]; label != "" {
 		return label
