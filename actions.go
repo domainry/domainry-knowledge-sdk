@@ -342,6 +342,14 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 		idempotency = "caller_key_required"
 		auditClass = "mutation_audit_required"
 	}
+	grantMode := actioncontract.PermissionGrantBundled
+	if spec.key == ActionLibrariesCreate {
+		// Creating a shared library is the only current Knowledge capability
+		// which is global to the product instead of being decided by one
+		// library's membership and page access policy. Keep it directly
+		// assignable; every resource-bound action remains source bundled.
+		grantMode = actioncontract.PermissionGrantDirect
+	}
 	definition := actioncontract.ActionDefinition{
 		Key: spec.key, Owner: AuthorizationOwner, SourceKind: "module_http", CapabilityKey: spec.capability, CapabilityLabel: spec.capabilityLabel,
 		OperationKey: spec.key[separator+1:], OperationLabel: spec.label, Label: spec.label,
@@ -356,7 +364,7 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 			Key: spec.key, Owner: AuthorizationOwner, ModuleKey: "knowledge", GroupKey: spec.capability,
 			ResourceKey: resourceKey, OperationKey: spec.key[separator+1:],
 			Label: spec.label, Description: spec.label, Category: spec.capabilityLabel,
-			GrantMode: actioncontract.PermissionGrantBundled, ScopeKind: actioncontract.PermissionScopeNone,
+			GrantMode: grantMode, ScopeKind: actioncontract.PermissionScopeNone,
 			DefaultLocale: "en", I18n: knowledgePermissionText(spec.capability, resourceKey, spec.key[separator+1:]),
 			LifecycleStatus: actioncontract.LifecycleActive,
 		},

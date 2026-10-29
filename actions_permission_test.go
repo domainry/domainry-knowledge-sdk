@@ -19,8 +19,12 @@ func TestAuthorizationActionsExposeLocalizedPermissionPresentation(t *testing.T)
 		if permission.ModuleKey != "knowledge" || permission.GroupKey == "" || permission.ScopeKind == "" || permission.DefaultLocale != "en" {
 			t.Fatalf("permission %q has incomplete presentation contract: %+v", permission.Key, permission)
 		}
-		if permission.GrantMode != actioncontract.PermissionGrantBundled {
-			t.Fatalf("permission %q is not source-role bundled: %q", permission.Key, permission.GrantMode)
+		wantGrantMode := actioncontract.PermissionGrantBundled
+		if permission.Key == ActionLibrariesCreate {
+			wantGrantMode = actioncontract.PermissionGrantDirect
+		}
+		if permission.GrantMode != wantGrantMode {
+			t.Fatalf("permission %q grant mode=%q want=%q", permission.Key, permission.GrantMode, wantGrantMode)
 		}
 		for _, locale := range []string{"en", "zh-CN"} {
 			text := permission.I18n[locale]
