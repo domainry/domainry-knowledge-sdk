@@ -16,6 +16,16 @@ type KnowledgeDocumentSource interface {
 	DeleteKnowledgeDocument(context.Context, string, Authority) error
 }
 
+// KnowledgeDocumentPermissionInspectionSource optionally lets the durable
+// projection worker inspect one remote document through the exact trusted ACL
+// token used by its last Put. This is management-plane confirmation only: the
+// tokens come from the persisted page projection, never from browser or model
+// input. It prevents an indexed private page from looking absent merely because
+// the source's default read policy is different from that page's ACL token.
+type KnowledgeDocumentPermissionInspectionSource interface {
+	InspectKnowledgeDocumentWithPermissions(context.Context, string, []string, Authority) (KnowledgeDocumentState, error)
+}
+
 // Optional recovery of the SAME immutable document deletion. A nil error is
 // a positive deletion acknowledgement: the source must either retrieve a
 // definitive operation receipt or execute a verified idempotent delete. A
