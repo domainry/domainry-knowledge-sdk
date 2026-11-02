@@ -56,6 +56,7 @@ type SaaSDocumentDownloadRequest struct {
 type SaaSSourceDocumentPutRequest struct {
 	Handle    string                                     `json:"handle"`
 	Input     knowledgesdk.KnowledgeDocumentIndexContent `json:"input"`
+	Recovery  bool                                       `json:"recovery,omitempty"`
 	Authority knowledgesdk.Authority                     `json:"authority"`
 }
 

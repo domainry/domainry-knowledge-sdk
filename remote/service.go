@@ -697,12 +697,28 @@ func (v documentRepository) StartKnowledgeDocumentPut(c context.Context, l knowl
 	e := v.client.invoke(c, "documents.start_put", l, &o)
 	return o.Record, o.Started, e
 }
+func (v documentRepository) StartKnowledgeDocumentPutRecovery(c context.Context, l knowledgepersistence.KnowledgeDocumentLease) (knowledgepersistence.KnowledgeDocumentRecord, bool, error) {
+	var o struct {
+		Record  knowledgepersistence.KnowledgeDocumentRecord `json:"record"`
+		Started bool                                         `json:"started"`
+	}
+	e := v.client.invoke(c, "documents.start_put_recovery", l, &o)
+	return o.Record, o.Started, e
+}
 func (v documentRepository) StartKnowledgeDocumentReindexPut(c context.Context, l knowledgepersistence.KnowledgeDocumentLease) (knowledgepersistence.KnowledgeDocumentRecord, bool, error) {
 	var o struct {
 		Record  knowledgepersistence.KnowledgeDocumentRecord `json:"record"`
 		Started bool                                         `json:"started"`
 	}
 	e := v.client.invoke(c, "documents.start_reindex_put", l, &o)
+	return o.Record, o.Started, e
+}
+func (v documentRepository) StartKnowledgeDocumentReindexPutRecovery(c context.Context, l knowledgepersistence.KnowledgeDocumentLease) (knowledgepersistence.KnowledgeDocumentRecord, bool, error) {
+	var o struct {
+		Record  knowledgepersistence.KnowledgeDocumentRecord `json:"record"`
+		Started bool                                         `json:"started"`
+	}
+	e := v.client.invoke(c, "documents.start_reindex_put_recovery", l, &o)
 	return o.Record, o.Started, e
 }
 func (v documentRepository) StartKnowledgeDocumentRetiredDelete(c context.Context, l knowledgepersistence.KnowledgeDocumentLease) (knowledgepersistence.KnowledgeDocumentRecord, bool, error) {

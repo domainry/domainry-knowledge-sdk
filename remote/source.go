@@ -45,6 +45,11 @@ func (value managedSource) PutKnowledgeDocument(ctx context.Context, input knowl
 		Handle: value.descriptor.Handle, Input: input, Authority: authority,
 	}, input.Content, input.Bytes, nil)
 }
+func (value managedSource) RecoverKnowledgeDocumentPut(ctx context.Context, input knowledgesdk.KnowledgeDocumentIndexContent, authority knowledgesdk.Authority) error {
+	return value.client.uploadStream(ctx, knowledgecontract.SaaSSourceDocumentPutPath, knowledgecontract.SaaSSourceDocumentPutRequest{
+		Handle: value.descriptor.Handle, Input: input, Recovery: true, Authority: authority,
+	}, input.Content, input.Bytes, nil)
+}
 func (value managedSource) InspectKnowledgeDocument(ctx context.Context, id string, authority knowledgesdk.Authority) (knowledgesdk.KnowledgeDocumentState, error) {
 	var output knowledgesdk.KnowledgeDocumentState
 	err := value.client.invoke(ctx, "source.document.inspect", struct {
@@ -113,3 +118,4 @@ func (value managedSource) ReadKnowledgeDocumentPassages(ctx context.Context, id
 }
 
 var _ knowledgesdk.KnowledgeDocumentDeleteRecoverySource = managedSource{}
+var _ knowledgesdk.KnowledgeDocumentPutRecoverySource = managedSource{}

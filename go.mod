@@ -3,8 +3,8 @@ module github.com/domainry/domainry-knowledge-sdk
 go 1.26.0
 
 require (
-	github.com/domainry/domainry-connector-sdk v0.1.18
-	github.com/domainry/domainry-foundation v0.2.19
+	github.com/domainry/domainry-connector-sdk v0.1.19
+	github.com/domainry/domainry-foundation v0.2.20
 	github.com/domainry/domainry-orm v0.1.34
 	github.com/domainry/domainry-tools-sdk v0.1.28
 )
@@ -12,7 +12,7 @@ require (
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/domainry/domainry-identity-sdk v0.1.38 // indirect
+	github.com/domainry/domainry-identity-sdk v0.1.41 // indirect
 	github.com/domainry/domainry-integration-sdk v0.1.26 // indirect
 	github.com/domainry/domainry-report-sdk v0.1.29 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect

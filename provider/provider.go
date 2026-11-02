@@ -48,6 +48,7 @@ type ResponseMapping struct {
 // specialized products; normal deployments leave it nil.
 type Config struct {
 	DocumentManagement                         bool
+	DocumentSourceProvider                     string
 	DocumentPermissionIDs                      []string
 	ReadPermissionIDs                          []string
 	AnalysisDocumentIDs                        []string
@@ -72,7 +73,8 @@ func (config Config) Configured() bool {
 		config.TopK != 0 || config.ResponseMapping != nil || config.InvalidResponseMapping ||
 		config.InvalidAnalysisDocumentIDs || config.InvalidSearchConfig || config.DocumentManagement ||
 		config.SearchMode != "" || config.SearchRerank != nil || config.SearchRecordKinds != nil ||
-		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil
+		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil ||
+		config.DocumentSourceProvider != ""
 }
 
 // ConfigFromEnvironment parses the standalone Knowledge product's source
@@ -80,11 +82,12 @@ func (config Config) Configured() bool {
 // root supplies the Factory separately.
 func ConfigFromEnvironment() Config {
 	config := Config{
-		BaseURL:     os.Getenv("KNOWLEDGE_PROVIDER_BASE_URL"),
-		APIKey:      os.Getenv("KNOWLEDGE_PROVIDER_API_KEY"),
-		TeamID:      os.Getenv("KNOWLEDGE_PROVIDER_TEAM_ID"),
-		KBID:        os.Getenv("KNOWLEDGE_PROVIDER_KB_ID"),
-		WorkspaceID: os.Getenv("KNOWLEDGE_PROVIDER_WORKSPACE_ID"),
+		BaseURL:                os.Getenv("KNOWLEDGE_PROVIDER_BASE_URL"),
+		APIKey:                 os.Getenv("KNOWLEDGE_PROVIDER_API_KEY"),
+		TeamID:                 os.Getenv("KNOWLEDGE_PROVIDER_TEAM_ID"),
+		KBID:                   os.Getenv("KNOWLEDGE_PROVIDER_KB_ID"),
+		WorkspaceID:            os.Getenv("KNOWLEDGE_PROVIDER_WORKSPACE_ID"),
+		DocumentSourceProvider: strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_DOCUMENT_SOURCE")),
 	}
 	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_TOP_K")); raw != "" {
 		value, err := strconv.Atoi(raw)

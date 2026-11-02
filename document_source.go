@@ -36,12 +36,35 @@ type KnowledgeDocumentDeleteRecoverySource interface {
 	RecoverKnowledgeDocumentDelete(context.Context, string, Authority) error
 }
 
+// Optional recovery of the SAME immutable document Put. The source must only
+// implement this port when replaying DocumentID, SHA256, RequestID, access
+// policy and permission IDs is durably fenced by that logical request. A nil
+// error is a new positive acceptance acknowledgement. The caller must reopen
+// the original content and must never use this port to change a document.
+// Sources without this explicit contract retain their uncertain state.
+type KnowledgeDocumentPutRecoverySource interface {
+	RecoverKnowledgeDocumentPut(context.Context, KnowledgeDocumentIndexContent, Authority) error
+}
+
+// KnowledgeDocumentIndexSource identifies the product object represented by an
+// indexed document. It is trusted application metadata, not public API input.
+// Providers may use it to preserve a user-facing title and a stable source
+// reference without exposing private object-storage URLs.
+type KnowledgeDocumentIndexSource struct {
+	Title       string
+	PageID      string
+	PageVersion int64
+	LibraryKind string
+	ContentType string
+}
+
 type KnowledgeDocumentIndexContent struct {
 	DocumentID string
 	Filename   string
 	Bytes      int64
 	SHA256     string
 	Content    io.Reader
+	Source     *KnowledgeDocumentIndexSource
 	// RequestID is created and durably recorded by the application before any
 	// write. It identifies one logical command, not permission to retry it.
 	RequestID          string

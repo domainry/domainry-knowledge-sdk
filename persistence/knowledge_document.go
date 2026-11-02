@@ -19,6 +19,9 @@ type KnowledgePageProjectionOrigin struct {
 	Version        int64  `json:"version"`
 	AccessRevision int64  `json:"access_revision"`
 	PermissionID   string `json:"permission_id,omitempty"`
+	Title          string `json:"title"`
+	ContentType    string `json:"content_type"`
+	LibraryKind    string `json:"library_kind"`
 }
 
 type KnowledgeDocumentReplacement struct {
@@ -33,37 +36,46 @@ type KnowledgeDocumentTransferRepository interface {
 	FindKnowledgeDocumentTransfer(context.Context, string, string, KnowledgeDocumentOrigin, knowledgesdk.Authority) (KnowledgeDocumentRecord, bool, error)
 }
 type KnowledgeDocumentRecord struct {
-	DocumentOrigin            *KnowledgeDocumentOrigin                    `json:"document_origin,omitempty"`
-	PageProjection            *KnowledgePageProjectionOrigin              `json:"page_projection,omitempty"`
-	Replacement               *KnowledgeDocumentReplacement               `json:"replacement,omitempty"`
-	Document                  knowledgesdk.KnowledgeDocument              `json:"document"`
-	RequestSHA256             string                                      `json:"request_sha256"`
-	SourceID                  string                                      `json:"source_id"`
-	AccessPolicySHA256        string                                      `json:"access_policy_sha256,omitempty"`
-	SourceAccess              *knowledgesdk.KnowledgeDocumentSourceAccess `json:"source_access,omitempty"`
-	PutRequestID              string                                      `json:"put_request_id,omitempty"`
-	RemoteID                  string                                      `json:"remote_id"`
-	BodyRef                   string                                      `json:"body_ref,omitempty"`
-	Actor                     knowledgesdk.Authority                      `json:"actor"`
-	PutStarted                bool                                        `json:"put_started"`
-	SecurityScanStarted       bool                                        `json:"security_scan_started"`
-	SecurityScanCompleted     bool                                        `json:"security_scan_completed"`
-	PutAcknowledged           bool                                        `json:"put_acknowledged"`
-	IndexObserved             bool                                        `json:"index_observed"`
-	DeleteStarted             bool                                        `json:"delete_started"`
-	DeleteAcknowledged        bool                                        `json:"delete_acknowledged,omitempty"`
-	Reindex                   *KnowledgeDocumentReindex                   `json:"reindex,omitempty"`
-	RetiredRemoteID           string                                      `json:"retired_remote_id,omitempty"`
-	RetiredDeleteStarted      bool                                        `json:"retired_delete_started,omitempty"`
-	RetiredDeleteAcknowledged bool                                        `json:"retired_delete_acknowledged,omitempty"`
+	DocumentOrigin        *KnowledgeDocumentOrigin                    `json:"document_origin,omitempty"`
+	PageProjection        *KnowledgePageProjectionOrigin              `json:"page_projection,omitempty"`
+	Replacement           *KnowledgeDocumentReplacement               `json:"replacement,omitempty"`
+	Document              knowledgesdk.KnowledgeDocument              `json:"document"`
+	RequestSHA256         string                                      `json:"request_sha256"`
+	SourceID              string                                      `json:"source_id"`
+	AccessPolicySHA256    string                                      `json:"access_policy_sha256,omitempty"`
+	SourceAccess          *knowledgesdk.KnowledgeDocumentSourceAccess `json:"source_access,omitempty"`
+	PutRequestID          string                                      `json:"put_request_id,omitempty"`
+	RemoteID              string                                      `json:"remote_id"`
+	BodyRef               string                                      `json:"body_ref,omitempty"`
+	Actor                 knowledgesdk.Authority                      `json:"actor"`
+	PutStarted            bool                                        `json:"put_started"`
+	PutRecoveryAttempts   int                                         `json:"put_recovery_attempts,omitempty"`
+	SecurityScanStarted   bool                                        `json:"security_scan_started"`
+	SecurityScanCompleted bool                                        `json:"security_scan_completed"`
+	PutAcknowledged       bool                                        `json:"put_acknowledged"`
+	IndexObserved         bool                                        `json:"index_observed"`
+	DeleteStarted         bool                                        `json:"delete_started"`
+	DeleteAcknowledged    bool                                        `json:"delete_acknowledged,omitempty"`
+	// PageLifecycleManaged means the immutable original is indexed only while
+	// at least one active, published File Page references it. Archiving the last
+	// page retires the remote index but retains the private original so a page
+	// restore can create a new provider generation. ResumeAfterDelete fences the
+	// race where a page is restored while the old remote delete is in flight.
+	PageLifecycleManaged      bool                      `json:"page_lifecycle_managed,omitempty"`
+	ResumeAfterDelete         bool                      `json:"resume_after_delete,omitempty"`
+	Reindex                   *KnowledgeDocumentReindex `json:"reindex,omitempty"`
+	RetiredRemoteID           string                    `json:"retired_remote_id,omitempty"`
+	RetiredDeleteStarted      bool                      `json:"retired_delete_started,omitempty"`
+	RetiredDeleteAcknowledged bool                      `json:"retired_delete_acknowledged,omitempty"`
 }
 
 type KnowledgeDocumentReindex struct {
-	Generation      int64  `json:"generation"`
-	RemoteID        string `json:"remote_id"`
-	PutRequestID    string `json:"put_request_id"`
-	PutStarted      bool   `json:"put_started"`
-	PutAcknowledged bool   `json:"put_acknowledged"`
+	Generation          int64  `json:"generation"`
+	RemoteID            string `json:"remote_id"`
+	PutRequestID        string `json:"put_request_id"`
+	PutStarted          bool   `json:"put_started"`
+	PutRecoveryAttempts int    `json:"put_recovery_attempts,omitempty"`
+	PutAcknowledged     bool   `json:"put_acknowledged"`
 }
 type KnowledgeDocumentReserve struct {
 	DocumentOrigin                                               *KnowledgeDocumentOrigin `json:",omitempty"`
@@ -104,7 +116,9 @@ type KnowledgeDocumentRepository interface {
 	KnowledgeDocumentWorkRecord(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, error)
 	StartKnowledgeDocumentScan(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
 	StartKnowledgeDocumentPut(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
+	StartKnowledgeDocumentPutRecovery(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
 	StartKnowledgeDocumentReindexPut(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
+	StartKnowledgeDocumentReindexPutRecovery(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
 	StartKnowledgeDocumentRetiredDelete(context.Context, KnowledgeDocumentLease) (KnowledgeDocumentRecord, bool, error)
 	StartKnowledgeDocumentDelete(context.Context, KnowledgeDocumentLease) error
 	ApplyKnowledgeDocumentProgress(context.Context, KnowledgeDocumentLease, KnowledgeDocumentProgress) error
