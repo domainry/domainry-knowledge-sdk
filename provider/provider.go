@@ -49,6 +49,7 @@ type ResponseMapping struct {
 type Config struct {
 	DocumentManagement                         bool
 	DocumentSourceProvider                     string
+	DocumentSourceID                           string
 	DocumentPermissionIDs                      []string
 	ReadPermissionIDs                          []string
 	AnalysisDocumentIDs                        []string
@@ -74,7 +75,7 @@ func (config Config) Configured() bool {
 		config.InvalidAnalysisDocumentIDs || config.InvalidSearchConfig || config.DocumentManagement ||
 		config.SearchMode != "" || config.SearchRerank != nil || config.SearchRecordKinds != nil ||
 		config.DocumentPermissionIDs != nil || config.ReadPermissionIDs != nil || config.AnalysisDocumentIDs != nil ||
-		config.DocumentSourceProvider != ""
+		config.DocumentSourceProvider != "" || config.DocumentSourceID != ""
 }
 
 // ConfigFromEnvironment parses the standalone Knowledge product's source
@@ -88,6 +89,7 @@ func ConfigFromEnvironment() Config {
 		KBID:                   os.Getenv("KNOWLEDGE_PROVIDER_KB_ID"),
 		WorkspaceID:            os.Getenv("KNOWLEDGE_PROVIDER_WORKSPACE_ID"),
 		DocumentSourceProvider: strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_DOCUMENT_SOURCE")),
+		DocumentSourceID:       strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_DOCUMENT_SOURCE_ID")),
 	}
 	if raw := strings.TrimSpace(os.Getenv("KNOWLEDGE_PROVIDER_TOP_K")); raw != "" {
 		value, err := strconv.Atoi(raw)

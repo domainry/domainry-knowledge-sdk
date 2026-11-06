@@ -15,13 +15,14 @@ type KnowledgeDocumentOrigin struct {
 }
 
 type KnowledgePageProjectionOrigin struct {
-	PageID         string `json:"page_id"`
-	Version        int64  `json:"version"`
-	AccessRevision int64  `json:"access_revision"`
-	PermissionID   string `json:"permission_id,omitempty"`
-	Title          string `json:"title"`
-	ContentType    string `json:"content_type"`
-	LibraryKind    string `json:"library_kind"`
+	PageID         string                                 `json:"page_id"`
+	Version        int64                                  `json:"version"`
+	AccessRevision int64                                  `json:"access_revision"`
+	PermissionID   string                                 `json:"permission_id,omitempty"`
+	Title          string                                 `json:"title"`
+	ContentType    string                                 `json:"content_type"`
+	LibraryKind    string                                 `json:"library_kind"`
+	Breadcrumbs    []knowledgesdk.KnowledgePageBreadcrumb `json:"breadcrumbs"`
 }
 
 type KnowledgeDocumentReplacement struct {

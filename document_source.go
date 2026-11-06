@@ -56,6 +56,10 @@ type KnowledgeDocumentIndexSource struct {
 	PageVersion int64
 	LibraryKind string
 	ContentType string
+	// Breadcrumbs is the complete published page chain from the Library root
+	// to PageID. Stable PageID values define index identity; titles are display
+	// metadata only. Page projections must never send a leaf-only breadcrumb.
+	Breadcrumbs []KnowledgePageBreadcrumb
 }
 
 type KnowledgeDocumentIndexContent struct {
