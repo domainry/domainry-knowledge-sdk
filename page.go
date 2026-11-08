@@ -507,6 +507,7 @@ type KnowledgePageDraftWrite struct {
 type KnowledgePageMove struct {
 	ClientID          string `json:"client_id"`
 	ExpectedRevision  int64  `json:"expected_revision"`
+	TargetLibraryID   string `json:"target_library_id,omitempty"`
 	ParentPageID      string `json:"parent_page_id,omitempty"`
 	Rank              string `json:"rank"`
 	AccessImpactToken string `json:"access_impact_token,omitempty"`
@@ -715,12 +716,15 @@ type KnowledgePageAccessWrite struct {
 }
 
 type KnowledgePageMovePreview struct {
-	ParentPageID string `json:"parent_page_id,omitempty"`
-	Rank         string `json:"rank"`
+	TargetLibraryID string `json:"target_library_id,omitempty"`
+	ParentPageID    string `json:"parent_page_id,omitempty"`
+	Rank            string `json:"rank"`
 }
 
 type KnowledgePageMoveImpact struct {
 	PageID          string                   `json:"page_id"`
+	SourceLibraryID string                   `json:"source_library_id"`
+	TargetLibraryID string                   `json:"target_library_id"`
 	ParentPageID    string                   `json:"parent_page_id,omitempty"`
 	AffectedPages   int                      `json:"affected_pages"`
 	ChangedSubjects []KnowledgeAccessSubject `json:"changed_subjects"`
