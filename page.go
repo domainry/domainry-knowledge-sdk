@@ -534,8 +534,11 @@ type KnowledgePageCopy struct {
 }
 
 type KnowledgePageStateWrite struct {
-	ClientID         string `json:"client_id"`
-	ExpectedRevision int64  `json:"expected_revision"`
+	ClientID           string  `json:"client_id"`
+	ExpectedRevision   int64   `json:"expected_revision"`
+	IncludeDescendants bool    `json:"include_descendants,omitempty"`
+	ParentPageID       *string `json:"parent_page_id,omitempty"`
+	Rank               string  `json:"rank,omitempty"`
 }
 
 type KnowledgePagePublish struct {
