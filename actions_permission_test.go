@@ -18,6 +18,9 @@ func TestAuthorizationActionsExposeLocalizedPermissionPresentation(t *testing.T)
 		if permission == nil {
 			continue
 		}
+		if definition.Authorization.Strategy != actioncontract.AuthorizationAuthenticated || definition.Authorization.PolicyKey != ResourcePolicyKey {
+			t.Fatalf("permission %q is not delegated to Knowledge resource policy: %+v", permission.Key, definition.Authorization)
+		}
 		if permission.ModuleKey != "knowledge" || permission.GroupKey == "" || permission.ScopeKind == "" || permission.DefaultLocale != "en" {
 			t.Fatalf("permission %q has incomplete presentation contract: %+v", permission.Key, permission)
 		}

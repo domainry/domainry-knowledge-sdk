@@ -7,7 +7,10 @@ import (
 	actioncontract "github.com/domainry/domainry-foundation/action"
 )
 
-const AuthorizationOwner = "module:knowledge"
+const (
+	AuthorizationOwner = "module:knowledge"
+	ResourcePolicyKey  = "knowledge.resource_policy"
+)
 
 const (
 	ActionOpenAPIGet = "knowledge.openapi.get"
@@ -355,8 +358,14 @@ func normalizeRoleAction(spec actionSpec) (actioncontract.ActionDefinition, erro
 	definition := actioncontract.ActionDefinition{
 		Key: spec.key, Owner: AuthorizationOwner, SourceKind: "module_http", CapabilityKey: spec.capability, CapabilityLabel: spec.capabilityLabel,
 		OperationKey: spec.key[separator+1:], OperationLabel: spec.label, Label: spec.label,
-		Exposures:     []actioncontract.Exposure{actioncontract.ExposurePublic, actioncontract.ExposureManagement},
-		Authorization: actioncontract.Authorization{Strategy: actioncontract.AuthorizationAuthenticated},
+		Exposures: []actioncontract.Exposure{actioncontract.ExposurePublic, actioncontract.ExposureManagement},
+		// Runtime authenticates the caller and delegates the authorization decision
+		// to Knowledge. Library membership and page ACLs own resource-bound access;
+		// the Knowledge host separately requires the direct product grant only when
+		// creating a shared library. Without this policy marker Runtime would reject
+		// every user who does not carry the whole Knowledge role before the request
+		// reaches that resource-aware decision.
+		Authorization: actioncontract.Authorization{Strategy: actioncontract.AuthorizationAuthenticated, PolicyKey: ResourcePolicyKey},
 		HTTP:          &actioncontract.HTTPBinding{Method: spec.method, RouteTemplate: spec.path},
 		NonHTTP: []actioncontract.NonHTTPBinding{
 			{Kind: "sdk", InvocationKey: spec.key},
