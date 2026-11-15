@@ -16,6 +16,16 @@ type Knowledge interface {
 	RevalidateKnowledge(context.Context, knowledgesdk.Result, knowledgesdk.Authority) error
 }
 
+// LibraryKnowledge is the explicit library-scoped retrieval boundary used by
+// callers that select a Knowledge library. Implementations must authorize the
+// current authority against that library and its sources on every operation;
+// an unavailable library must never fall back to a deployment-wide datasource.
+type LibraryKnowledge interface {
+	Knowledge
+	SearchLibraryKnowledge(context.Context, string, string, knowledgesdk.Authority) (knowledgesdk.Result, error)
+	ReadLibraryKnowledge(context.Context, string, string, knowledgesdk.Authority) (knowledgesdk.Result, error)
+}
+
 type Options struct {
 	DocumentStorage            knowledgesdk.KnowledgeDocumentStorage
 	DocumentSecurity           DocumentSecurityScanner

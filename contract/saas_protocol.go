@@ -16,12 +16,28 @@ const (
 
 	SaaSDocumentUploadPrepareOperation   = "service.document_upload_prepare"
 	SaaSDocumentDownloadPrepareOperation = "service.document_download_prepare"
+	SaaSLibrarySearchOperation           = "runtime.knowledge.library_search"
+	SaaSLibraryReadOperation             = "runtime.knowledge.library_read"
 
 	SaaSDocumentUploadOperation       = "service.document_upload"
 	SaaSDocumentUploadChunkOperation  = "service.document_upload_chunk"
 	SaaSDocumentUploadSourceOperation = "service.document_upload_source"
 	SaaSTransferHeader                = "X-Domainry-Knowledge-Transfer"
 )
+
+// Library-scoped retrieval retains the caller's exact library and authority.
+// It does not grant access or resolve another product's identity namespace.
+type SaaSLibrarySearchRequest struct {
+	LibraryID string                 `json:"library_id"`
+	Query     string                 `json:"query"`
+	Authority knowledgesdk.Authority `json:"authority"`
+}
+
+type SaaSLibraryReadRequest struct {
+	LibraryID  string                 `json:"library_id"`
+	DocumentID string                 `json:"document_id"`
+	Authority  knowledgesdk.Authority `json:"authority"`
+}
 
 // SaaSDocumentUploadRequest is the bounded metadata part that accompanies a
 // streamed multipart document body. Content is deliberately excluded from the

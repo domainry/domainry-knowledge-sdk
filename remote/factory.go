@@ -104,6 +104,38 @@ func (value remoteKnowledge) RevalidateKnowledge(ctx context.Context, input know
 	}{input, authority}, nil, value.options)
 }
 
+func (value remoteKnowledge) SearchLibraryKnowledge(ctx context.Context, libraryID, query string, authority knowledgesdk.Authority) (knowledgesdk.Result, error) {
+	var output knowledgesdk.Result
+	err := value.client.invokeWithOptions(ctx, knowledgecontract.SaaSLibrarySearchOperation, knowledgecontract.SaaSLibrarySearchRequest{
+		LibraryID: libraryID, Query: query, Authority: authority,
+	}, &output, value.options)
+	return checkedLibraryResult(output, err, libraryID, "search", query, "")
+}
+
+func (value remoteKnowledge) ReadLibraryKnowledge(ctx context.Context, libraryID, documentID string, authority knowledgesdk.Authority) (knowledgesdk.Result, error) {
+	var output knowledgesdk.Result
+	err := value.client.invokeWithOptions(ctx, knowledgecontract.SaaSLibraryReadOperation, knowledgecontract.SaaSLibraryReadRequest{
+		LibraryID: libraryID, DocumentID: documentID, Authority: authority,
+	}, &output, value.options)
+	return checkedLibraryResult(output, err, libraryID, "fetch", "", documentID)
+}
+
+func checkedLibraryResult(result knowledgesdk.Result, err error, library, operation, query, document string) (knowledgesdk.Result, error) {
+	if err != nil {
+		return knowledgesdk.Result{}, err
+	}
+	if library == "" || result.LibraryID != library || result.Operation != operation || result.Query != query || result.DocumentID != document || result.ScopeSHA256 == "" {
+		return knowledgesdk.Result{}, remoteError("unavailable", "knowledge.library_result_invalid", false, nil)
+	}
+	for _, citation := range result.Citations {
+		if citation.LibraryID != library || citation.Operation != operation || (document != "" && citation.DocumentID != document) {
+			return knowledgesdk.Result{}, remoteError("unavailable", "knowledge.library_result_invalid", false, nil)
+		}
+	}
+	return result, nil
+}
+
 var _ saashost.Factory = (*Factory)(nil)
 var _ saashost.Binding = (*binding)(nil)
 var _ knowledgecontract.Runtime = (*runtimeClient)(nil)
+var _ knowledgecontract.LibraryKnowledge = remoteKnowledge{}
